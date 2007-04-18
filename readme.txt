@@ -32,20 +32,20 @@ My widget Run For Cover does exactly the same, so if you prefer a widget look fo
 
 = Why does the plugin show no images for my last.fm username? = 
 
-Please note that if you registered less than 7 days ago at last.fm you’re plugin will 
+Please note that if you registered less than 7 days ago at last.fm, your plugin will 
 display no images. Last.fm regenerates the needed pages usually on Sunday or Monday.
 
 And there is always the `recent tracks` setting for `period`.
 
 = What are all this options I get? =
 
-* **Last.fm username**: your username. Default is my username,so if you like Randy Newman cd covers, do not change it ;-)
-* **Period**: last.fm can go back in time for the cds you listened to. Leave it set to weekly if you want to see lots of different cd covers
-* **Max. displayed**: the maximum number of cd covers you want. As not all cds have cover images at Amazon, you will not always get the exact number you set here
+* **Last.fm username**: your username. Default is my username, so if you like Randy Newman cd covers, do not change it ;-)
+* **Period**: last.fm can go back in time for the cds you listened to. Leave it set to weekly if you want to see lots of different cd covers.
+* **Max. displayed**: the maximum number of cd covers you want. As not all cds have cover images at Amazon, you will not always get the exact number you set here.
 * **Thumbnail size**: the desired width and height of the images. You can set this to zero and use img.runforcover in your stylesheet.If you do not know what this means, try some numbers between 75 and 160.
-* **Text when no images**: when the plugin can find no images, this text is used. In rare occassions this message is used as error message
+* **Text when no images**: when the plugin can find no images, this text is used. In rare occassions this message is used as error message.
 * **Link to**: you can choose where the images link to: Last.fm (default) or Amazon. If you choose to link to the Amazon product page, please note that this includes my associate id for Amazon.
 
 = Does your plugin support multi-user wordpress installations? =
 
-The widget this plugin was based on supports Wordpress MU. I haven't had a chance to test it.
+The widget this plugin was based on supports Wordpress MU. I haven't had a chance to test this plugin.
