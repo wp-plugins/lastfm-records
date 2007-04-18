@@ -26,7 +26,7 @@ My widget Run For Cover does exactly the same, so if you prefer a widget look fo
 
    This function accepts two (optional!) arguments: `period` (recenttracks, weekly, 3month, 6month, 12month or overall) and count (any number bigger than 0)
    
-   For example: `<?php lastfmrecords_display('weekly', 4); ?> displays the 4 cds you listened to the most in the last week.`
+   For example: `<?php lastfmrecords_display('weekly', 4); ?> displays the 4 cds you listened to the most in the last week.`If you do not add these options, the calues from the options page will be used.
 
 == Frequently Asked Questions ==
 
