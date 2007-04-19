@@ -26,7 +26,7 @@ My widget Run For Cover does exactly the same, so if you prefer a widget look fo
 
    This function accepts two (optional!) arguments: `period` (recenttracks, weekly, 3month, 6month, 12month or overall) and `count` (any number bigger than 0)
    
-   For example: `<?php lastfmrecords_display('weekly', 4); ?>` displays the 4 cds you listened to the most in the last week. If you do not add these options, the values from the options page will be used.
+   For example: `<?php lastfmrecords_display('weekly', 4); ?>` displays the 4 cds you listened to the most in the last week. If you do not add these, the values from the options page will be used.
 
 == Frequently Asked Questions ==
 
@@ -35,14 +35,14 @@ My widget Run For Cover does exactly the same, so if you prefer a widget look fo
 Please note that if you registered less than 7 days ago at last.fm, your plugin will 
 display no images. Last.fm regenerates the needed pages usually on Sunday or Monday.
 
-And there is always the `recent tracks` setting for `period`.
+The obvious exception is the `recent tracks` setting for `period`.
 
 = What are all this options I get? =
 
-* **last.fm username**: your username. Default is my username, so if you like Randy Newman cd covers, do not change it ;-)
+* **last.fm username**: your username at last.fm.
 * **period**: last.fm can go back in time for the cds you listened to. Leave it set to weekly if you want to see lots of different cd covers.
 * **image count**: the maximum number of cd covers you want. As not all cds have cover images at Amazon, you will not always get the exact number you set here.
-* **image width**: the desired width and height of the images. You can set this to zero and use img.runforcover in your stylesheet.If you do not know what this means, try some numbers between 75 and 160.
+* **image width**: the desired width and height of the images. You can set this to zero and use `img.cdcover` in your stylesheet.If you do not know what this means, try some numbers between 75 and 160.
 * **error message**: when the plugin can find no images, this text is used. In rare occassions this message is used as error message.
 
 = Does your plugin support multi-user wordpress installations? =
