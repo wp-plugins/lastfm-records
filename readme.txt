@@ -15,7 +15,7 @@ grabs the list of cds you listened to recently and tries to find the cover image
 at Amazon. To speed things up, it only fetches these data once a day and keeps a 
 local copy for the rest of the day.
 
-My widget Run For Cover does exactly the same, so if you prefer a widget look for it in the Wordpress Plugin directory.
+My widget Run For Cover does exactly the same, so if you prefer a widget so if you prefer a plugin go [here](http://wordpress.org/extend/plugins/run-for-cover/ "widget version").
 
 == Installation ==
 
