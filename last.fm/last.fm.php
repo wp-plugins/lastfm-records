@@ -185,7 +185,9 @@ function lastfmrecords_getimagehtml($_title, $_artist, $options) {
   $_safe_title  = str_replace("'", "`", urldecode($_title));
   $_safe_artist = str_replace("'", "`", urldecode($_artist));
 
-  $_imgHTML = "<img src='" . $_AMZimg['image'] . "' " . "title='" . $_safe_title . ": " . $_safe_artist . "' ";
+  $_imgHTML  = "<img src='" . $_AMZimg['image'] . "' ";
+  $_imgHTML .= "title='" . $_safe_title . ": " . $_safe_artist . "' ";
+  $_imgHTML .= "alt='cover of cd " . $_safe_title . " by " . $_safe_artist . "' ";
 
   # people using their own class in css?
   if (0 == $options['imgwidth']) {
@@ -194,9 +196,7 @@ function lastfmrecords_getimagehtml($_title, $_artist, $options) {
   	# no -- so give the image the width specified and add some margin to keep them apart
     $_imgHTML .= "style='height: " . $options['imgwidth'] . "px; width: " . $options['imgwidth'] . "px; margin: 0px 5px 5px 0px;' ";
   }
-  $_imgHTML .= "alt='' />";
-
-  # "alt='" . $rfc_safe_title . ": " . $rfc_safe_artist . "' ";
+  $_imgHTML .= "/>";
 
   // add Last.fm link
   $_imgHTML = "    <a href='http://www.last.fm/music/" . $_artist . "/" . $_title . "/'>\n      " . $_imgHTML . "\n    </a>";
