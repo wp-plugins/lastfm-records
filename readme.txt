@@ -1,7 +1,7 @@
 === Last.Fm Records ===
 Contributors: hondjevandirkie
 Donate link: http://dirkie.nu/
-Tags: lastfm, last.fm, cd cover, amazon, plugin, widget
+Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, sidebar
 Requires at least: 2.0
 Tested up to: 2.1
 Stable tag: 1.1
