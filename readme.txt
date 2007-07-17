@@ -18,10 +18,10 @@ You can upload cd cover images yourself if you want to on the options page.
 
 1. Upload the folder `last.fm` to the `wp-content/plugins` directory
 2. Make sure the `cache` folder exists in the `last.fm` folder and that PHP can write files in it
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Configure under `Options` >> `Last.Fm Records`
-4. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and drag the widget on the sidebar. You can set the title to use here.
-4. In all other cases, use `<?php lastfmrecords_display(); ?>` in your templates
+3. Activate the plugin through the 'Plugins' menu in WordPress
+4. Configure under `Options` >> `Last.Fm Records`
+5. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and drag the widget on the sidebar. You can set the title to use here.
+6. In all other cases, use `<?php lastfmrecords_display(); ?>` in your templates
 
    This function accepts two (optional!) arguments: `period` (recenttracks, weekly, 3month, 6month, 12month or overall) and `count` (any number bigger than 0)
    
