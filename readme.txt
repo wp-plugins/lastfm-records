@@ -17,6 +17,7 @@ You can upload cd cover images yourself if you want to on the options page.
 == Installation ==
 
 1. Upload the folder `last.fm` to the `wp-content/plugins` directory
+2. Make sure the `cache` folder exists in the `last.fm` folder and that PHP can write files in it
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Configure under `Options` >> `Last.Fm Records`
 4. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and drag the widget on the sidebar. You can set the title to use here.
