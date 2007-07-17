@@ -10,7 +10,9 @@ This plugin shows cd covers for cds your listened to, according to last.fm. It c
 
 == Description ==
 
-This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm. To speed things up, it only fetches these data once a day and keeps a local copy for the rest of the day.
+This plugin/widget shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm. To speed things up, it only fetches these data once a day and keeps a local copy for the rest of the day.
+
+It can be used as a plugin and as a widget. See the installation instructions for more information.
 
 You can upload cd cover images yourself if you want to on the options page.
 
