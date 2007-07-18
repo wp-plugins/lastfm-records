@@ -1,11 +1,13 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.1
+# Version: 1.2
 # Plugin URI: http://dirkie.nu/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
+
+$_lfm_version = "1.2";
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
@@ -20,12 +22,37 @@ if (!function_exists('get_option')) {
 ##################################################################
 
 if ((array_key_exists('t', $_GET)) && (array_key_exists('a', $_GET))) {
+
+  # fallback image
+  $_img = 'http://panther1.last.fm/depth/catalogue/noimage/cover_large.gif';
+
+  $_title  = urlencode($_GET['t']);
+  $_artist = urlencode($_GET['a']);
+
   $lfm = new lastfmrecords();
-  $_cd = $lfm->getimageurl(urlencode($_GET['t']), urlencode($_GET['a']));
+  $_cd = $lfm->getimageurl($_title, $_artist);
   if (is_array($_cd)) {
   	$_img = $_cd['image'];
   } else {
-	  $_img = 'http://panther1.last.fm/depth/catalogue/noimage/cover_large.gif';
+    # if the artist is really two artists, let's see if the album is under one of their names 
+    # e.g. 'The River In Reverse' by 'Elvis Costello & Allen Toussaint' is under Elvis Costello -- shame!
+
+    # this code is commented out, as it gives too many wrong images
+    # e.g. 'Way Down In The Hole" by 'Tom Waits & Kronos Quartet' is then on 'Beautiful Maladies: The Island Years'
+    # this is wrong, as that is the original version and not the beautiful new version with the Kronos Quartet
+    # if you don't mind, restore the next 9 lines below.
+    # this bit of code is also in the function findcdtitlefortrack, so you'll have to restore it there too.
+
+    # if (false !== strpos($_artist, '%2B%2526%2B')) {
+    #   $_partners = explode('%2B%2526%2B', $_artist);
+    #   foreach($_partners as $_partner) {
+    #     $_cd = $lfm->getimageurl($_title, $_partner);
+    #     if (is_array($_cd)) {
+  	#       $_img = $_cd['image'];
+    #       break;
+    #     }
+    #   }
+    # }
 	}
   header("Location: " . $_img);
   exit;
@@ -109,8 +136,6 @@ class lastfmrecords {
     $_count = 0;
     $_albums_done = array();
     foreach($_lastfmlist as $_title => $_artist) {
-      # $_title  = urlencode($_title);
-      # $_artist = urlencode($_artist);
 
       if ($_count == intval($options['count'])) {
         break;
@@ -120,15 +145,7 @@ class lastfmrecords {
         break;
       }
 
-      if ('recenttracks' == $options['period']) {
-        $_songtitle = $_title;
-        $_title = $this->findcdtitlefortrack($_songtitle, $_artist);
-        if (!$_title) {
-          continue;
-        } else {
-      	  $_title = urlencode($_title);
-        }
-      }
+      # $_title = urlencode($_title);
 
       # prevent duplicate cd covers
       if (array_key_exists($_title, $_albums_done)) {
@@ -151,9 +168,6 @@ class lastfmrecords {
 
       $_albums_done[$_title] = $_artist;
 
-      if ('recenttracks' == $options['period']) {
-        $_safe_songtitle  = $this->cleanuptext($_songtitle);
-      }
       $_safe_title  = $this->cleanuptext($_title);
       $_safe_artist = $this->cleanuptext($_artist);
 ?>
@@ -166,24 +180,16 @@ class lastfmrecords {
 <?
       }
 ?>
-      <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'>
-        <img class='cdcover cover<?= $_count + 1 ?>' src='<?= $_imgurl ?>' title='<?= $_safe_artist ?>: <?= $_safe_title ?>' alt='<?= $_safe_title ?>' />
-      </a>
+        <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'>
+          <img class='cdcover cover<?= $_count + 1 ?>' src='<?= $_imgurl ?>' title='<?= $_safe_artist ?>: <?= $_safe_title ?>' alt='<?= $_safe_title ?>' />
+        </a>
 <?
       if ('imgwtext.css' == $options['display']) {
 ?>
       </td><td>
-      <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'><?= $_safe_title ?></a>
-<?
-        if ('recenttracks' == $options['period']) {
-?>
-      <br />
-      <i><?= $_safe_songtitle ?></i>
-<?
-        }
-?>
-      <br />
-      <?= $_safe_artist ?>
+        <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'><?= $_safe_title ?></a>
+        <br />
+        <?= $_safe_artist ?>
       </td></tr></table>
 <?
     }
@@ -193,7 +199,17 @@ class lastfmrecords {
       $_count++;
     }
 
-    echo "  </ol>\n\n";
+    echo "  </ol>\n";
+
+    global $_lfm_version;
+
+    echo "  <!--\n";
+    echo "    Last.Fm Records plugin (version " . $_lfm_version . ")\n";
+    echo "    last.fm username: " . $options['username'] . "\n";
+    echo "    period setting: " . $options['period'] . "\n";
+    echo "    display setting: " . $options['display'] . "\n";
+    echo "  -->\n";
+
   }
 
   ################################################################
@@ -215,19 +231,29 @@ class lastfmrecords {
       # not cached, get list from last.fm and parse into an array
       switch($options['period']) {
         case 'recenttracks':
-          $_last_fm_url = 'http://ws.audioscrobbler.com/1.0/user/' . $options['username'] . '/recenttracks.rss';
+          $_last_fm_url = 'http://ws.audioscrobbler.com/1.0/user/' . $options['username'] . '/recenttracks.xml';
           $_result      = $this->loadurl($_last_fm_url);
           if (!$_result) {
             return false;
           }
-          $_items       = explode('<item>', $_result);
+          $_items       = explode('<track streamable', $_result);
           $_parsed = array();
           array_shift($_items);
           foreach($_items as $_item) {
-            $_line = $this->stringbetween($_item, '/music/', '</link>');
+            $_line = $this->stringbetween($_item, '/music/', '</url>');
             if ($_line) {
-              $_line = explode('/_/', $_line);
-              $_parsed[$_line[1]] = $_line[0];
+              # ok, we found a song
+              $_line = explode('/_/', trim($_line));
+
+              # let's see if we can find the cd title for this song
+              $_title = $this->findcdtitlefortrack($_line[1], $_line[0]);
+              if (!$_title) {
+                continue;
+              } else {
+      	        $_title = urlencode($_title);
+              }
+              
+              $_parsed[$_title] = $_line[0];
             }
           }
           $this->writecachefile($_parsed, $_cachefile);
@@ -324,7 +350,6 @@ class lastfmrecords {
 
     # obviously: TODO
     $_r = str_replace('%5C', '', $_r);
-    $_r = str_replace('%26amp%3B', 'And', $_r);
 
     $_lastfm_xml = $this->loadurl($_r);
 
@@ -474,30 +499,53 @@ class lastfmrecords {
     # 2. amazon
 
     $_url = "http://musicbrainz.org/ws/1/track/?type=xml&title=" . $_title . "&artist=" . $_artist;
+
     $_musicbrainz = $this->loadurl($_url);
 
     if (!$_musicbrainz) {
       # as the url could be unavailable, we try amazon
+      echo "<!--  niet gevonden by musicbrainz, we proberen amazon -->\n";
       return $this->findcdtitlefortrackatamazon($_title, $_artist);
     }
-
-    $_artist = urldecode($_artist);
 
     $_items = explode('<track id', $_musicbrainz);
     array_shift($_items);
     foreach($_items as $_item) {
       $_artistfound = $this->stringbetween($_item, '<name>', '</name>');
-      # the request to musicbrainz includes the artist name, so this maybe irrelevant
-      if (soundex($_artistfound) == soundex($_artist)) {
+      echo "<!-- de gevonden artist is " . $_artistfound . " -->\n";
+      # does this artist's name 'sound' like the one we're looking for?
+      # this way, Sansévérino and Sanseverino are matched
+      $_cleanartist = urldecode($_artist);
+      if (soundex($_artistfound) == soundex($_cleanartist)) {
     	  $_songtitle = $this->stringbetween($_item, '<release-list>', '</release-list>');
     	  if ($_songtitle) {
     	    $_songtitle = $this->stringbetween($_songtitle, '<title>', '</title>');
+    	    echo "<!-- ja gevonden bij musicbrainz, cd heet " . $_songtitle . " -->\n";
     	    return $_songtitle;
     	  }
       }
     }
 
-    # musicbrainz doesn't know a cd for this track, I doubt Amazon will
+    # we have received an answer from musicbrainz, but the song we are looking for isn't in the answer
+    # if the artist is really two artists, we could check if the album is under one of their names
+    # e.g. 'The River In Reverse' by 'Elvis Costello & Allen Toussaint' is under Elvis Costello -- shame!
+
+    # this code is commented out, as it gives too many wrong images
+    # e.g. 'Way Down In The Hole" by 'Tom Waits & Kronos Quartet' is then on 'Beautiful Maladies: The Island Years'
+    # this is wrong, as that is the original version and not the beautiful new version with the Kronos Quartet
+    # if you don't mind, restore the next 9 lines below.
+
+    # if (false !== strpos($_artist, '%2B%2526%2B')) {
+    #   $_partners = explode('%2B%2526%2B', $_artist);
+    #   foreach($_partners as $_partner) {
+    #     $_cdtitle = $this->findcdtitlefortrack($_title, $_partner);
+    #     if ($_cdtitle) {
+  	#       return $_cdtitle;
+    #     }
+    #   }
+    # }
+
+    # peter%2B%2526%2Bkate say: just give up
     return false;
   }
 
@@ -521,10 +569,12 @@ class lastfmrecords {
 	  array_shift($_items);
     foreach ($_items as $_k => $_v) {
       $_artistfound = $this->stringbetween($_v, '<Artist>', '</Artist>');
+      echo "<!-- de gevonden artist is " . $_artistfound . " -->\n";
       # does this artist's name 'sound' like the one we're looking for?
       # this way, Sansévérino and Sanseverino are matched
       if (soundex($_artistfound) == soundex($_artist)) {
     	  $_title = $this->stringbetween($_v, '<Title>', '</Title>');
+   	    echo "<!-- ja gevonden bij amazon, cd heet " . $_songtitle . " -->\n";
     	  return $_title;
       }
     }

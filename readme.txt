@@ -3,8 +3,8 @@ Contributors: hondjevandirkie
 Donate link: http://dirkie.nu/
 Tags: lastfm, last.fm, cd cover, amazon, plugin, widget
 Requires at least: 2.0
-Tested up to: 2.1
-Stable tag: 1.1
+Tested up to: 2.2
+Stable tag: 1.2
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can behave as a widget.
 
@@ -16,7 +16,10 @@ You can upload cd cover images yourself if you want to on the options page.
 
 == Installation ==
 
-1. Upload the folder `last.fm` to the `wp-content/plugins` directory
+1. Upload the folder `last.fm` to the `wp-content/plugins` directory.
+
+   The main script should be at `/wp-content/plugins/last.fm/last.fm.php'. If you put it in the widgets directory, the plugin will not work!
+
 2. Make sure the `cache` folder exists in the `last.fm` folder and that PHP can write files in it
 3. Activate the plugin through the 'Plugins' menu in WordPress
 4. Configure under `Plug-ins` >> `Last.Fm Records`
