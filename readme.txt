@@ -18,7 +18,7 @@ You can upload cd cover images yourself if you want to on the options page.
 
 1. Upload the folder `last.fm` to the `wp-content/plugins` directory.
 
-   The main script should be at `/wp-content/plugins/last.fm/last.fm.php'. If you put it in the widgets directory, the plugin will not work!
+   The main script should be at `/wp-content/plugins/last.fm/last.fm.php`. If you put it in the widgets directory, the plugin will not work!
 
 2. Make sure the `cache` folder exists in the `last.fm` folder and that PHP can write files in it
 3. Activate the plugin through the 'Plugins' menu in WordPress
