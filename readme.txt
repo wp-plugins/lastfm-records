@@ -1,7 +1,7 @@
 === Last.Fm Records ===
 Contributors: hondjevandirkie
 Donate link: http://dirkie.nu/
-Tags: lastfm, last.fm, cd cover, amazon, plugin, widget
+Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music
 Requires at least: 2.0
 Tested up to: 2.2
 Stable tag: 1.2
@@ -12,7 +12,7 @@ This plugin shows cd covers for cds your listened to, according to last.fm. It c
 
 This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm. To speed things up, it only fetches these data once a day and keeps a local copy for the rest of the day.
 
-You can upload cd cover images yourself if you want to on the options page.
+If the plugin can't find an image for a cd, you can upload it yourself on the options page.
 
 == Installation ==
 

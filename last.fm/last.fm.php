@@ -1,61 +1,17 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.2
+# Version: 1.2.1
 # Plugin URI: http://dirkie.nu/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.2";
+$_lfm_version = "1.2.1";
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
-  # include_once(dirname(__FILE__) . '/../../../wp-config.php');
-  # include_once(dirname(__FILE__) . '/../../../wp-includes/wp-db.php');
   require_once(dirname(__FILE__) . '/../../../wp-blog-header.php');
-}
-
-##################################################################
-# direct calls to this script with a $_GET['t'] and a $_GET['a'] #
-# result in a header redirect to the cd cover (if found).        #
-##################################################################
-
-if ((array_key_exists('t', $_GET)) && (array_key_exists('a', $_GET))) {
-
-  # fallback image
-  $_img = 'http://panther1.last.fm/depth/catalogue/noimage/cover_large.gif';
-
-  $_title  = urlencode($_GET['t']);
-  $_artist = urlencode($_GET['a']);
-
-  $lfm = new lastfmrecords();
-  $_cd = $lfm->getimageurl($_title, $_artist);
-  if (is_array($_cd)) {
-  	$_img = $_cd['image'];
-  } else {
-    # if the artist is really two artists, let's see if the album is under one of their names 
-    # e.g. 'The River In Reverse' by 'Elvis Costello & Allen Toussaint' is under Elvis Costello -- shame!
-
-    # this code is commented out, as it gives too many wrong images
-    # e.g. 'Way Down In The Hole" by 'Tom Waits & Kronos Quartet' is then on 'Beautiful Maladies: The Island Years'
-    # this is wrong, as that is the original version and not the beautiful new version with the Kronos Quartet
-    # if you don't mind, restore the next 9 lines below.
-    # this bit of code is also in the function findcdtitlefortrack, so you'll have to restore it there too.
-
-    # if (false !== strpos($_artist, '%2B%2526%2B')) {
-    #   $_partners = explode('%2B%2526%2B', $_artist);
-    #   foreach($_partners as $_partner) {
-    #     $_cd = $lfm->getimageurl($_title, $_partner);
-    #     if (is_array($_cd)) {
-  	#       $_img = $_cd['image'];
-    #       break;
-    #     }
-    #   }
-    # }
-	}
-  header("Location: " . $_img);
-  exit;
 }
 
 function lastfmrecords_display($period = false, $count = false) {
@@ -152,18 +108,21 @@ class lastfmrecords {
     	  continue;
       }
 
-      echo "    <!-- Looking for $_title by $_artist: ";
       # is the image in the cache?
       $_cacheresult = $this->imageincache($_title, $_artist);
       if (is_array($_cacheresult)) {
-    	  echo "image found -->\n";
+        # cache has an image url
     	  $_imgurl = $_cacheresult['image'];
       } else if ('noimage' == $_cacheresult) {
-    	  echo "cache says there's no image (you can try to add an image on the options page) -->\n";
+      	# cache says there is no image
     	  continue;
       } else {
-    	  echo "cache doesn't know, we'll try our luck with a call from the img src -->\n";
-        $_imgurl = $this->siteurl() . 'wp-content/plugins/last.fm/last.fm.php?t=' . $_title . '&a=' . $_artist;
+    	  # cache doesn't know, so we try to find it
+    	  $_cd = $this->getimageurl($_title, $_artist);
+        if (!is_array($_cd)) {
+          continue;
+        }
+  	    $_imgurl = $_cd['image'];
       }
 
       $_albums_done[$_title] = $_artist;
@@ -397,7 +356,7 @@ class lastfmrecords {
     $_ext = strtolower($_ext['extension']);
 
     $_newname = base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
-    $_newurl  = $this->siteurl() . 'cache/' . base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
+    $_newurl  = $this->siteurl() . 'wp-content/plugins/last.fm/cache/' . base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
     # does the thumb already exist?
     if (file_exists($_newname)) {
     	return $_newurl;
@@ -489,65 +448,53 @@ class lastfmrecords {
     return false;
   }
 
-  ####################################################
-  # send tracktitle and artist to the Amazon API and #
-  # hopefully get a cd title back                    #
-  ####################################################
+  #################################################
+  # send tracktitle and artist to MusicBrainz and #
+  # hopefully get a cd title back                 #
+  #################################################
 
   function findcdtitlefortrack($_title, $_artist) {
     # 1. musicbrainz.org
-    # 2. amazon
+    $_result = $this->findcdtitlefortrackatmusicbrainz($_title, $_artist);
+    if (!$_result) {
+      # 2. amazon
+      $_result = $this->findcdtitlefortrackatamazon($_title, $_artist);
+    }
 
+    return $_result;
+  }
+
+  function findcdtitlefortrackatmusicbrainz($_title, $_artist) {
     $_url = "http://musicbrainz.org/ws/1/track/?type=xml&title=" . $_title . "&artist=" . $_artist;
 
     $_musicbrainz = $this->loadurl($_url);
 
-    if (!$_musicbrainz) {
-      # as the url could be unavailable, we try amazon
-      echo "<!--  niet gevonden by musicbrainz, we proberen amazon -->\n";
-      return $this->findcdtitlefortrackatamazon($_title, $_artist);
-    }
-
-    $_items = explode('<track id', $_musicbrainz);
-    array_shift($_items);
-    foreach($_items as $_item) {
-      $_artistfound = $this->stringbetween($_item, '<name>', '</name>');
-      echo "<!-- de gevonden artist is " . $_artistfound . " -->\n";
-      # does this artist's name 'sound' like the one we're looking for?
-      # this way, Sansévérino and Sanseverino are matched
-      $_cleanartist = urldecode($_artist);
-      if (soundex($_artistfound) == soundex($_cleanartist)) {
-    	  $_songtitle = $this->stringbetween($_item, '<release-list>', '</release-list>');
-    	  if ($_songtitle) {
-    	    $_songtitle = $this->stringbetween($_songtitle, '<title>', '</title>');
-    	    echo "<!-- ja gevonden bij musicbrainz, cd heet " . $_songtitle . " -->\n";
-    	    return $_songtitle;
-    	  }
+    if ($_musicbrainz) {
+      $_items = explode('<track id', $_musicbrainz);
+      array_shift($_items);
+      foreach($_items as $_item) {
+        $_artistfound = $this->stringbetween($_item, '<name>', '</name>');
+        # does this artist's name 'sound' like the one we're looking for?
+        # this way, Sansévérino and Sanseverino are matched
+        $_cleanartist = urldecode($_artist);
+        if (soundex($_artistfound) == soundex($_cleanartist)) {
+    	    $_songtitle = $this->stringbetween($_item, '<release-list>', '</release-list>');
+    	    if ($_songtitle) {
+    	      $_songtitle = $this->stringbetween($_songtitle, '<title>', '</title>');
+    	      return $_songtitle;
+    	    }
+        }
       }
     }
-
-    # we have received an answer from musicbrainz, but the song we are looking for isn't in the answer
-    # if the artist is really two artists, we could check if the album is under one of their names
-    # e.g. 'The River In Reverse' by 'Elvis Costello & Allen Toussaint' is under Elvis Costello -- shame!
-
-    # this code is commented out, as it gives too many wrong images
-    # e.g. 'Way Down In The Hole" by 'Tom Waits & Kronos Quartet' is then on 'Beautiful Maladies: The Island Years'
-    # this is wrong, as that is the original version and not the beautiful new version with the Kronos Quartet
-    # if you don't mind, restore the next 9 lines below.
-
-    # if (false !== strpos($_artist, '%2B%2526%2B')) {
-    #   $_partners = explode('%2B%2526%2B', $_artist);
-    #   foreach($_partners as $_partner) {
-    #     $_cdtitle = $this->findcdtitlefortrack($_title, $_partner);
-    #     if ($_cdtitle) {
-  	#       return $_cdtitle;
-    #     }
-    #   }
-    # }
-
-    # peter%2B%2526%2Bkate say: just give up
+    
+    # not found
     return false;
   }
+
+  ####################################################
+  # send tracktitle and artist to the Amazon API and #
+  # hopefully get a cd title back                    #
+  ####################################################
 
   function findcdtitlefortrackatamazon($_title, $_artist) {
     $_apikey = '17CBJCAMVX5V38CR0F02';
@@ -558,26 +505,24 @@ class lastfmrecords {
 
     $_amazon_xml = $this->loadurl($_r);
   
-    if (!$_amazon_xml) {
-		  return false;
-	  }
+    if ($_amazon_xml) {
+      $_artist = urldecode($_artist);
 
-    $_artist = urldecode($_artist);
-
-    # terrible way of parsing XML
-    $_items = explode('<Item>', $_amazon_xml);
-	  array_shift($_items);
-    foreach ($_items as $_k => $_v) {
-      $_artistfound = $this->stringbetween($_v, '<Artist>', '</Artist>');
-      echo "<!-- de gevonden artist is " . $_artistfound . " -->\n";
-      # does this artist's name 'sound' like the one we're looking for?
-      # this way, Sansévérino and Sanseverino are matched
-      if (soundex($_artistfound) == soundex($_artist)) {
-    	  $_title = $this->stringbetween($_v, '<Title>', '</Title>');
-   	    echo "<!-- ja gevonden bij amazon, cd heet " . $_songtitle . " -->\n";
-    	  return $_title;
+      # terrible way of parsing XML
+      $_items = explode('<Item>', $_amazon_xml);
+	    array_shift($_items);
+      foreach ($_items as $_k => $_v) {
+        $_artistfound = $this->stringbetween($_v, '<Artist>', '</Artist>');
+        # does this artist's name 'sound' like the one we're looking for?
+        # this way, Sansévérino and Sanseverino are matched
+        if (soundex($_artistfound) == soundex($_artist)) {
+    	    $_title = $this->stringbetween($_v, '<Title>', '</Title>');
+    	    return $_title;
+        }
       }
     }
+
+    # not found
     return false;
   }
 
@@ -612,10 +557,9 @@ class lastfmrecords {
     # 24 files before deleting them.
     if ($handle = @opendir($_dir)) {
       while (false !== ($_file = readdir($handle))) {
-        # first: is this a cache file? I would like to be able to add covers by hand for cds Amazon
-        # doesn't know in a future version, so we skip everything that's not cached html
+        # we skip everything that's not .cache, as other files are cd data
         if ("cache" == substr($_file, -5)) {
-          # ok, it's cached html. is it for the current last.fm user?
+          # ok, it's cache. is it for the current last.fm user?
           if ($_lastfmusername == substr($_file, 0, strlen($_lastfmusername))) {
             # now, if it's not from today, we can delete it
             if (false === strpos($_file, "." . date("ymd"))) {
