@@ -828,9 +828,44 @@ class lastfmrecords {
   <table class="optiontable"> 
 <? echo $_missing; ?>
   </table>
+  <br /><br /><br />
 <?
     }
+
+    global $_lfm_version;
 ?>
+  <script type="text/javascript">
+    <!--
+    function ow() {
+    	var nW = window.open(
+                 'http://dirkie.nu/downloads/lastfmrecords.popup.php?version=<?= $_lfm_version ?>',
+                 'checkversion',
+                 'height=200,width=300,status=no,toolbar=no,menubar=no,location=no'
+               );
+      return false;
+    }
+    -->
+  </script>
+  <h2>Miscellaneous</h2>
+  <table class="optiontable"> 
+    <tr valign="top">
+      <th scope="row">am I using the latest version?</th>
+      <td>
+    	  <a href="#" onclick="return ow();">
+          check for new version at dirkie.nu
+        </a>      
+      </td>
+    </tr>
+    <tr valign="top">
+      <th scope="row">I really like this plugin!</th>
+      <td>
+        <a href="https://www.amazon.com/gp/registry/wishlist/2XZPC0CD6SILM/ref=wl_web/">
+          <img src="https://images-na.ssl-images-amazon.com/images/G/01/gifts/registries/wishlist/v2/web/wl-btn-129-b._V52198553_.gif" width="129" alt="My Amazon.com Wish List" height="42" />
+        </a>
+      </td>
+    </tr>
+  </table>
+  <br /><br /><br />
 </div>
 <?
   }

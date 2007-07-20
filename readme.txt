@@ -1,10 +1,10 @@
 === Last.Fm Records ===
 Contributors: hondjevandirkie
 Donate link: http://dirkie.nu/
-Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music
+Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music, images, sidebar
 Requires at least: 2.0
 Tested up to: 2.2
-Stable tag: 1.2
+Stable tag: 1.2.1
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can behave as a widget.
 
