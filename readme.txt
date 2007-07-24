@@ -1,6 +1,6 @@
 === Last.Fm Records ===
 Contributors: hondjevandirkie
-Donate link: http://dirkie.nu/
+Donate link: https://www.amazon.com/gp/registry/wishlist/2XZPC0CD6SILM/ref=wl_web/
 Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music, images, sidebar
 Requires at least: 2.0
 Tested up to: 2.2
