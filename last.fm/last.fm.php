@@ -2,7 +2,7 @@
 
 # Plugin Name: Last.Fm Records
 # Version: 1.2.1
-# Plugin URI: http://dirkie.nu/
+# Plugin URI: http://dirkie.nu/projects/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
