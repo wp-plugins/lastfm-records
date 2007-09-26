@@ -1,13 +1,13 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.2.2
+# Version: 1.2.3
 # Plugin URI: http://dirkie.nu/projects/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.2.2";
+$_lfm_version = "1.2.3";
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
@@ -39,6 +39,18 @@ function lastfmrecords_stylesheet() {
 function lastfmrecords_siteurl() {
   $lfm = new lastfmrecords();
   return $lfm->siteurl();
+}
+
+function lastfm_records_filtercontent($content) {
+  if (false !== strpos($content, '<!-- lastfmrecords -->')) {
+    ob_start();
+    lastfmrecords_display();
+    $result = ob_get_contents();
+    ob_clean();
+    return str_replace('<!-- lastfmrecords -->', $result, $content);
+  } else {
+    return $content;
+  }
 }
 
 class lastfmrecords {
@@ -785,8 +797,9 @@ class lastfmrecords {
             </select><br />
             When set to 'yes', thumbnails will be created by the server and saved<br />
             to the cache folder. The pictures will be less grainy, but it takes<br />
-            a little longer when the plugin finds a cd for the first time.<br /><br />
-            <b>NB!</b>: Obviously, setting it to yes takes up more disk space.
+            a little longer when the plugin finds a cd for the first time.<br />
+            <br />
+            Obviously, setting it to yes takes up more disk space.
           </td>
         </tr>
       </table>
@@ -998,4 +1011,6 @@ add_action('wp_head', 'lastfmrecords_stylesheet');
 # widget variant
 add_action('plugins_loaded', 'widget_lastfmrecords_init');
 
+# to display cd covers on a page
+add_filter('the_content', 'lastfm_records_filtercontent');
 ?>
