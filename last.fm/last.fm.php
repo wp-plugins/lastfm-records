@@ -59,7 +59,7 @@ function lastfm_records_filtercontent($content) {
     $lfm->display($_period, $_count);
     $result = ob_get_contents();
     ob_clean();
-    return preg_replace('#\[lastfmrecords.+\]#', $result, $content);
+    return preg_replace('#\[lastfmrecords.*\]#', $result, $content);
   } else {
     return $content;
   }
