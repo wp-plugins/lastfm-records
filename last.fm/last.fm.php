@@ -42,12 +42,12 @@ function lastfmrecords_siteurl() {
 }
 
 function lastfm_records_filtercontent($content) {
-  if (false !== strpos($content, '<lastfmrecords />')) {
+  if (false !== strpos($content, '[lastfmrecords]')) {
     ob_start();
     lastfmrecords_display();
     $result = ob_get_contents();
     ob_clean();
-    return str_replace('<!-- lastfmrecords -->', $result, $content);
+    return str_replace('[lastfmrecords]', $result, $content);
   } else {
     return $content;
   }
