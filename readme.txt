@@ -23,11 +23,19 @@ If the plugin can't find an image for a cd, you can upload it yourself on the op
 3. Activate the plugin through the 'Plugins' menu in WordPress
 4. Configure under `Plug-ins` >> `Last.Fm Records`
 5. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and drag the widget on the sidebar. You can set the title to use here.
-6. If you want to display the cd covers on a wordpress page, add
+6. If you want to display the cd covers on a wordpress page or in a post, add
 
    `[lastfmrecords]`
    
-   to the page. This text will be replaced by the images. The values from the options page will be used.
+   to the page. This text will be replaced by the images. If you don't want the values from the options page, you can override them using pipes:
+
+   `[lastfmrecords|x|y]`
+
+   where x is the period and y the number of covers you want to display. So for example:
+
+   `[lastfmrecords|recenttracks|1]`
+
+   will display the cover of the last cd you listened to.
 7. In all other cases, use `<?php lastfmrecords_display(); ?>` in your templates
 
    This function accepts two (optional!) arguments: `period` (recenttracks, weekly, 3month, 6month, 12month or overall) and `count` (any number bigger than 0)

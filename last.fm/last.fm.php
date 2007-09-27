@@ -42,12 +42,24 @@ function lastfmrecords_siteurl() {
 }
 
 function lastfm_records_filtercontent($content) {
-  if (false !== strpos($content, '[lastfmrecords]')) {
+  if (false !== strpos($content, '[lastfmrecords')) {
+    $lfm = new lastfmrecords();
+    // extra options?
+    $_period = false;
+    $_count = false;
+    $_options = $lfm->stringbetween($content, '[lastfmrecords|' , ']');
+    if ($_options) {
+      $_options = explode('|', $_options);
+      if (2 == count($_options)) {
+        $_period = $_options[0];
+        $_count  = $_options[1];
+      }
+    }
     ob_start();
-    lastfmrecords_display();
+    $lfm->display($_period, $_count);
     $result = ob_get_contents();
     ob_clean();
-    return str_replace('[lastfmrecords]', $result, $content);
+    return preg_replace('#\[lastfmrecords.+\]#', $result, $content);
   } else {
     return $content;
   }
