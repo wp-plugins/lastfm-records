@@ -1,13 +1,13 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.2.3
+# Version: 1.2.4
 # Plugin URI: http://dirkie.nu/projects/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.2.3";
+$_lfm_version = "1.2.4";
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
@@ -42,7 +42,7 @@ function lastfmrecords_siteurl() {
 }
 
 function lastfm_records_filtercontent($content) {
-  if (false !== strpos($content, '<!-- lastfmrecords -->')) {
+  if (false !== strpos($content, '<lastfmrecords />')) {
     ob_start();
     lastfmrecords_display();
     $result = ob_get_contents();
