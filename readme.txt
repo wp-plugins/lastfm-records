@@ -2,8 +2,8 @@
 Contributors: hondjevandirkie
 Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music, images, sidebar
 Requires at least: 2.0
-Tested up to: 2.3
-Stable tag: 1.2.4
+Tested up to: 2.3.1
+Stable tag: 1.3
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can behave as a widget.
 
