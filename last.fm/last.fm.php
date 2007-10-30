@@ -1,13 +1,13 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.2.4
+# Version: 1.3
 # Plugin URI: http://dirkie.nu/projects/lastfmrecords/
-# Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
+# Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm, amazon and musicbrainz.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.2.4";
+$_lfm_version = "1.3";
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
@@ -21,7 +21,7 @@ function lastfmrecords_display($period = false, $count = false) {
 
 function lastfmrecords_add_pages() {
  if (function_exists('add_options_page')) {
-    # Lorelle told me to
+    # Lorelle told me to put it on the plugins tab
     add_submenu_page('plugins.php', 'Last.Fm Records', 'Last.Fm Records', 8, basename(__FILE__), 'lastfmrecords_options_page');
   }
 }
@@ -39,6 +39,11 @@ function lastfmrecords_stylesheet() {
 function lastfmrecords_siteurl() {
   $lfm = new lastfmrecords();
   return $lfm->siteurl();
+}
+
+function lastfmrecords_wordpressurl() {
+  $lfm = new lastfmrecords();
+  return $lfm->wordpressurl();
 }
 
 function lastfm_records_filtercontent($content) {
@@ -78,23 +83,35 @@ class lastfmrecords {
   }
   
   function siteurl() {
-    $_file  = pathinfo($this->path(), PATHINFO_BASENAME);
-    $_siteurl = substr($this->path(), 0, -1 * strlen($_file));
-    # for when we're in the backend
-    $_siteurl = str_replace('wp-admin/', '', $_siteurl);
+    $_url = get_option('home');
+    if ("/" != substr($_url, -1)) {
+      $_url .= "/";
+    }
+    return $_url;
+    
+    # $_file  = pathinfo($this->path(), PATHINFO_BASENAME);
+    # $_siteurl = substr($this->path(), 0, -1 * strlen($_file));
+    # # for when we're in the backend
+    # $_siteurl = str_replace('wp-admin/', '', $_siteurl);
+    # 
+    # return $_siteurl;
+  }
 
-    return $_siteurl;
+  function wordpressurl() {
+    $_url = get_option('siteurl');
+    if ("/" != substr($_url, -1)) {
+      $_url .= "/";
+    }
+    return $_url;
   }
 
   function options() {
     return get_option('lastfm-records');
   }
 
-  ###################################################################
-  # this is the function that echoes the html for the cd covers     #
-  # it adds calls to this script for cds it can't find in the cache #
-  # (see top of this script)                                        #
-  ###################################################################
+  ################################################################
+  # this is the function that generates the html for the sidebar #
+  ################################################################
 
   function display($period = false, $count = false) {
     $options = $this->options();
@@ -193,6 +210,9 @@ class lastfmrecords {
   # and parse it into an array that looks like                   #
   #                                                              #
   # $array[title] = artist                                       #
+  #                                                              #
+  # this avoids multiple occurences of the same song             #
+  #                                                              #
   ################################################################
 
   function getlist($options) {
@@ -216,20 +236,33 @@ class lastfmrecords {
           $_parsed = array();
           array_shift($_items);
           foreach($_items as $_item) {
-            $_line = $this->stringbetween($_item, '/music/', '</url>');
-            if ($_line) {
-              # ok, we found a song
-              $_line = explode('/_/', trim($_line));
+            // are artist and cd title available?
+            $_artist  = $this->stringbetween($_item, '<artist', '</artist>');
+            if ($_artist && (false !== strpos($_artist, '">'))) {
+              $_artist  = substr($_artist, strpos($_artist, '">') + 2);
+            }
+            $_cdtitle = $this->stringbetween($_item, '<album', '</album>');
+            if ($_cdtitle && (false !== strpos($_cdtitle, '">'))) {
+              $_cdtitle = substr($_cdtitle, strpos($_cdtitle, '">') + 2);
+            }
+            if ($_artist && $_cdtitle) {
+              // echo "<!--" . $_artist . "--" . $_cdtitle . "-->\n";
+              $_parsed[$_cdtitle] = $_artist;
+            } else {
+              $_line = $this->stringbetween($_item, '/music/', '</url>');
+              if ($_line) {
+                # ok, we found a song
+                $_line = explode('/_/', trim($_line));
 
-              # let's see if we can find the cd title for this song
-              $_title = $this->findcdtitlefortrack($_line[1], $_line[0]);
-              if (!$_title) {
-                continue;
-              } else {
-      	        $_title = urlencode($_title);
+                # let's see if we can find the cd title for this song
+                $_title = $this->findcdtitlefortrack($_line[1], $_line[0]);
+                if (!$_title) {
+                  continue;
+                } else {
+      	          $_title = urlencode($_title);
+                }
+                $_parsed[$_title] = $_line[0];
               }
-              
-              $_parsed[$_title] = $_line[0];
             }
           }
           $this->writecachefile($_parsed, $_cachefile);
@@ -373,7 +406,7 @@ class lastfmrecords {
     $_ext = strtolower($_ext['extension']);
 
     $_newname = base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
-    $_newurl  = $this->siteurl() . 'wp-content/plugins/last.fm/cache/' . base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
+    $_newurl  = $this->wordpressurl() . 'wp-content/plugins/last.fm/cache/' . base64_encode($_imagedata['artist'] . '#_#' . $_imagedata['cdtitle']) . '.' . $_ext;
     # does the thumb already exist?
     if (file_exists($_newname)) {
     	return $_newurl;
@@ -551,9 +584,9 @@ class lastfmrecords {
     $_ser = serialize($_array);
     # write to cache
     if ($_append) {
-      $_f = fopen($_file, 'w');
+      $_f = @fopen($_file, 'w');
     } else {
-      $_f = fopen($_file, 'w+');
+      $_f = @fopen($_file, 'w+');
     }
     if ($_f) {
       fwrite($_f, $_ser, strlen($_ser));
@@ -674,7 +707,7 @@ class lastfmrecords {
           if (!move_uploaded_file($_FILES['uf']['tmp_name'], $this->cachedir() . $_newname)) {
             $_fadingstatus = 1;
           } else {
-      	    $_array = array('image'      => $this->siteurl() . 'wp-content/plugins/last.fm/cache/' . $_newname,
+      	    $_array = array('image'      => $this->wordpressurl() . 'wp-content/plugins/last.fm/cache/' . $_newname,
                             'cdtitle'    => $_POST['ut'],
                             'artist'     => $_POST['ua']
                            );
@@ -693,9 +726,7 @@ class lastfmrecords {
                        'count'      => '6',
                        'imgwidth'   => '85',
                        'noimages'   => 'No images to display',
-                       'period'     => 'weekly',
-                       'htmlbefore' => '',
-                       'htmlafter'  => '');
+                       'period'     => 'weekly');
     }
 
 	  if (array_key_exists('lastfm-submit', $_POST)) {
@@ -712,6 +743,7 @@ class lastfmrecords {
       }
 
       $options['display']     = strip_tags(stripslashes($_POST['lastfm-display']));
+      $options['stylesheet']  = strip_tags(stripslashes($_POST['lastfm-stylesheet']));
       $options['noimages']    = strip_tags(stripslashes($_POST['lastfm-noimages']));
       $options['period']      = strip_tags(stripslashes($_POST['lastfm-period']));
       $options['localthumbs'] = strip_tags(stripslashes($_POST['lastfm-localthumbs']));
@@ -778,6 +810,16 @@ class lastfmrecords {
               <option value="onebig.css"<?php if ('onebig.css' == $options['display']) { echo ' selected'; } ?>>First image twice as big</option>
               <option value="imgwtext.css"<?php if ('imgwtext.css' == $options['display']) { echo ' selected'; } ?>>Image with text</option>
             </select>
+          </td>
+        </tr>
+        <tr valign="top"> 
+          <th scope="row">add stylesheet</th> 
+          <td>
+            <select style="width: 200px;" id="lastfm-stylesheet" name="lastfm-stylesheet">
+              <option value="1"<?php if ('1' == $options['stylesheet']) { echo ' selected'; } ?>>Yes</option>
+              <option value="0"<?php if ('0' == $options['stylesheet']) { echo ' selected'; } ?>>No</option>
+            </select><br />
+            You can set this to No if you want to do all the stylesheet work yourself.
           </td>
         </tr>
         <tr valign="top">
@@ -852,8 +894,8 @@ class lastfmrecords {
 
     global $_lfm_version;
 ?>
+<!--
   <script type="text/javascript">
-    <!--
     function ow() {
     	var nW = window.open(
                  'http://dirkie.nu/downloads/lastfmrecords.popup.php?version=<?= $_lfm_version ?>',
@@ -862,10 +904,11 @@ class lastfmrecords {
                );
       return false;
     }
-    -->
   </script>
+-->
   <h2>Miscellaneous</h2>
   <table class="optiontable"> 
+<!--
     <tr valign="top">
       <th scope="row">am I using the latest version?</th>
       <td>
@@ -874,8 +917,9 @@ class lastfmrecords {
         </a>      
       </td>
     </tr>
+-->
     <tr valign="top">
-      <th scope="row">I really like this plugin!</th>
+      <th scope="row">I really like this plugin! Will you accept my eternal gratitude?</th>
       <td>
         <a href="https://www.amazon.com/gp/registry/wishlist/2XZPC0CD6SILM/ref=wl_web/">
           <img src="https://images-na.ssl-images-amazon.com/images/G/01/gifts/registries/wishlist/v2/web/wl-btn-129-b._V52198553_.gif" width="129" alt="My Amazon.com Wish List" height="42" />
@@ -910,7 +954,7 @@ class lastfmrecords {
             $result .= '    <tr valign="top">' . "\n";
             $result .= '      <th scope="row">' . urldecode($_ta[0]) . "</th>\n";
             $result .= '      <td>' . "\n";
-            $result .= '        <a target="_blank" href="http://images.google.com/images?hl=en&q=+%22' . $_ta[0] . '%22+%22' . $_ta[1] . '%22+site:images.amazon.com">[find image]</a>&nbsp;&nbsp;&nbsp;<a href="#" onclick="return showupload(' . $count . ');">' . urldecode($_ta[1]) . "</a><br /><br />\n";
+            $result .= '        <a target="_blank" href="http://images.google.com/images?hl=en&q=+%22' . $_ta[0] . '%22+%22' . $_ta[1] . '%22">[find image]</a>&nbsp;&nbsp;&nbsp;<a href="#" onclick="return showupload(' . $count . ');">' . urldecode($_ta[1]) . "</a><br /><br />\n";
             $result .= '        <span id="upload' . $count . '" style="display: none;">' . "\n";
             $result .= '          <form enctype="multipart/form-data" method="post" action="' . $_SERVER['PHP_SELF'] . '?page=last.fm.php">' . "\n";
             $result .= '            <input type="hidden" name="ua" value="' . $_ta[0] . '" />' . "\n";
@@ -935,6 +979,9 @@ class lastfmrecords {
 
   function stylesheet() {
     $options = $this->options();
+    if ('0' == $options['stylesheet']) {
+      return false;
+    }
 ?>
   <!-- added by plugin Last.Fm Records -->
   <style type="text/css">
@@ -1002,7 +1049,7 @@ function widget_lastfmrecords_init() {
         <input style="width: 200px;" id="lastfmrecords-title" name="lastfmrecords-title" type="text" value="<?= $title ?>" />
       </label>
     </p>
-    <p>Other options are on the <a href="<?= lastfmrecords_siteurl(); ?>wp-admin/plugins.php?page=last.fm.php">options page</a> for this plugin.</p>
+    <p>Other options are on the <a href="<?= lastfmrecords_wordpressurl(); ?>wp-admin/plugins.php?page=last.fm.php">options page</a> for this plugin.</p>
     <input type="hidden" id="lastfmrecords-submit" name="lastfmrecords-submit" value="1" />    
 <?
   }
