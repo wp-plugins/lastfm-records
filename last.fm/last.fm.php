@@ -1,13 +1,15 @@
 <?
 
 # Plugin Name: Last.Fm Records
-# Version: 1.3
+# Version: 1.3.1
 # Plugin URI: http://dirkie.nu/projects/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm, amazon and musicbrainz.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.3";
+$_lfm_version = "1.3.1";
+
+define('DEBUG', false);
 
 if (!function_exists('get_option')) {
   # why do I always get me in this kind of trouble working outside of wordpress?
@@ -125,6 +127,7 @@ class lastfmrecords {
     # get list for this user
     $_lastfmlist = $this->getlist($options);
     if (!$_lastfmlist) {
+      $this->log('getlist returned false');
   	  echo $options['noimages'];
       return;
     }
@@ -153,15 +156,21 @@ class lastfmrecords {
       $_cacheresult = $this->imageincache($_title, $_artist);
       if (is_array($_cacheresult)) {
         # cache has an image url
+        $this->log('image for ' . $_title . ' by ' . $_artist . ' found in cache');
     	  $_imgurl = $_cacheresult['image'];
       } else if ('noimage' == $_cacheresult) {
       	# cache says there is no image
+        $this->log('cache says image for ' . $_title . ' by ' . $_artist . ' is not available, so skip to next album');
     	  continue;
       } else {
     	  # cache doesn't know, so we try to find it
+        $this->log('cache has no info for ' . $_title . ' by ' . $_artist . ', let`s go out and try to find it:');
     	  $_cd = $this->getimageurl($_title, $_artist);
         if (!is_array($_cd)) {
+          $this->log('  no success there');
           continue;
+        } else {
+          $this->log('  success!');
         }
   	    $_imgurl = $_cd['image'];
       }
@@ -222,14 +231,17 @@ class lastfmrecords {
 
     if (file_exists($_cachefile)) {
       # cachefile exists
+      $this->log('list is in cache');
       return unserialize(file_get_contents($_cachefile));
     } else {
       # not cached, get list from last.fm and parse into an array
+      $this->log('list is not in cache, get out and get it!');
       switch($options['period']) {
         case 'recenttracks':
           $_last_fm_url = 'http://ws.audioscrobbler.com/1.0/user/' . $options['username'] . '/recenttracks.xml';
           $_result      = $this->loadurl($_last_fm_url);
           if (!$_result) {
+            $this->log('error fetching recenttracks xml');
             return false;
           }
           $_items       = explode('<track streamable', $_result);
@@ -247,6 +259,9 @@ class lastfmrecords {
             }
             if ($_artist && $_cdtitle) {
               // echo "<!--" . $_artist . "--" . $_cdtitle . "-->\n";
+              $this->log('nice, though recenttracks, both artist ' . $_artist . ' and cd title ' . $_cdtitle . ' are in the xml');
+              $_cdtitle = urlencode($_cdtitle);
+              $_artist  = urlencode($_artist);
               $_parsed[$_cdtitle] = $_artist;
             } else {
               $_line = $this->stringbetween($_item, '/music/', '</url>');
@@ -254,13 +269,14 @@ class lastfmrecords {
                 # ok, we found a song
                 $_line = explode('/_/', trim($_line));
 
+                $this->log('track ' . $_line[1] . ' and artist ' . $_line[0] . ' found, now let\'s see which cd it\'s on');
+
                 # let's see if we can find the cd title for this song
                 $_title = $this->findcdtitlefortrack($_line[1], $_line[0]);
                 if (!$_title) {
                   continue;
-                } else {
-      	          $_title = urlencode($_title);
                 }
+      	        $_title = urlencode($_title);
                 $_parsed[$_title] = $_line[0];
               }
             }
@@ -506,12 +522,19 @@ class lastfmrecords {
   function findcdtitlefortrack($_title, $_artist) {
     # 1. musicbrainz.org
     $_result = $this->findcdtitlefortrackatmusicbrainz($_title, $_artist);
-    if (!$_result) {
-      # 2. amazon
-      $_result = $this->findcdtitlefortrackatamazon($_title, $_artist);
+    if ($_result) {
+      $this->log('found through musicbrainz! It\'s on ' . $_result);
+      return $_result;
     }
 
-    return $_result;
+    # 2. amazon
+    $_result = $this->findcdtitlefortrackatamazon($_title, $_artist);
+    if ($_result) {
+      $this->log('found through amazon! It\'s on ' . $_result);
+      return $_result;
+    }
+
+    return false;
   }
 
   function findcdtitlefortrackatmusicbrainz($_title, $_artist) {
@@ -1014,6 +1037,14 @@ class lastfmrecords {
   </style>
 <?
   }
+
+  function log($text) {
+    if (DEBUG) {
+      $text = date("y-m-j h:i:s ") . $text . "\n";
+      $_f = @fopen(dirname(__FILE__) . '/lastfmrecords.log', 'a');
+      fwrite($_f, $text, strlen($text));
+    }
+  } 
 }
 
 # this function gets called when widgets are supported
