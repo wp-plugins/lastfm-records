@@ -1,13 +1,13 @@
-<?
+<?php
 
 # Plugin Name: Last.Fm Records
-# Version: 1.3.1
+# Version: 1.3.2
 # Plugin URI: http://dirkie.nu/projects/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm, amazon and musicbrainz.
 # Author: Dog Of Dirk
 # Author URI: http://dirkie.nu/
 
-$_lfm_version = "1.3.1";
+$_lfm_version = "1.3.2";
 
 define('DEBUG', false);
 
@@ -181,37 +181,37 @@ class lastfmrecords {
       $_safe_artist = $this->cleanuptext($_artist);
 ?>
     <li>
-<?
+<?php
       if ('imgwtext.css' == $options['display']) {
       	# I prefer something other than a table, but that's hard to keep the text together next to the image...
 ?>
       <table><tr valign="top"><td>
-<?
+<?php
       }
 ?>
-        <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'>
-          <img class='cdcover cover<?= $_count + 1 ?>' src='<?= $_imgurl ?>' title='<?= $_safe_artist ?>: <?= $_safe_title ?>' alt='<?= $_safe_title ?>' />
+        <a href='http://www.last.fm/music/<?php echo $_artist ?>/<?php echo $_title ?>/'>
+          <img class='cdcover cover<?php echo $_count + 1 ?>' src='<?php echo $_imgurl ?>' title='<?php echo $_safe_artist ?>: <?php echo $_safe_title ?>' alt='<?php echo $_safe_title ?>' />
         </a>
-<?
+<?php
       if ('imgwtext.css' == $options['display']) {
 ?>
       </td><td>
-        <a href='http://www.last.fm/music/<?= $_artist ?>/<?= $_title ?>/'><?= $_safe_title ?></a>
+        <a href='http://www.last.fm/music/<?php echo $_artist ?>/<?php echo $_title ?>/'><?php echo $_safe_title ?></a>
         <br />
-        <?= $_safe_artist ?>
+        <?php echo $_safe_artist ?>
       </td></tr></table>
-<?
+<?php
     }
 ?>
     </li>
-<?
+<?php
       $_count++;
     }
     global $_lfm_version;
 ?>
   </ol>
-  <!-- Last.Fm Records <?= $_lfm_version ?> (<?= $options['username'] ?>, <?= $options['period'] ?>, <?= $options['display'] ?>) -->
-<?
+  <!-- Last.Fm Records <?php echo $_lfm_version ?> (<?php echo $options['username'] ?>, <?php echo $options['period'] ?>, <?php echo $options['display'] ?>) -->
+<?php
   }
 
   ################################################################
@@ -885,7 +885,7 @@ class lastfmrecords {
       </p>
     </fieldset>
   </form>
-<?
+<?php
     # missing cd covers?
     $_missing = $this->getmissingcovers();
     if ($_missing) {
@@ -909,10 +909,10 @@ class lastfmrecords {
 
   <h2>Upload Missing Covers</h2>
   <table class="optiontable"> 
-<? echo $_missing; ?>
+<?php echo $_missing; ?>
   </table>
   <br /><br /><br />
-<?
+<?php
     }
 
     global $_lfm_version;
@@ -921,7 +921,7 @@ class lastfmrecords {
   <script type="text/javascript">
     function ow() {
     	var nW = window.open(
-                 'http://dirkie.nu/downloads/lastfmrecords.popup.php?version=<?= $_lfm_version ?>',
+                 'http://dirkie.nu/downloads/lastfmrecords.popup.php?version=<?php echo $_lfm_version ?>',
                  'checkversion',
                  'height=200,width=300,status=no,toolbar=no,menubar=no,location=no'
                );
@@ -952,7 +952,7 @@ class lastfmrecords {
   </table>
   <br /><br /><br />
 </div>
-<?
+<?php
   }
 
   function getmissingcovers() {
@@ -1010,32 +1010,32 @@ class lastfmrecords {
   <style type="text/css">
     #lastfmrecords    { padding: 0px; padding-bottom: 10px; }
     #lastfmrecords li { list-style-type: none; margin: 0px; padding: 0px; display: inline; }
-<?
+<?php
   # people using their own class in css?
   if (0 != intval($options['imgwidth'])) {
     switch($options['display']) {
       case 'imgwtext.css':
 ?>
     #lastfmrecords a  { font-weight: bold; }
-    img.cdcover       { height: <?= $options['imgwidth'] ?>px; width: <?= $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
-<?
+    img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
+<?php
         break;
       case 'onebig.css'  :
 ?>
-    img.cdcover       { height: <?= $options['imgwidth'] ?>px; width: <?= $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
-    img.cover1        { height: <?= (2 * intval($options['imgwidth'])) + 7 ?>px; width: <?= (2 * intval($options['imgwidth'])) + 7 ?>px; margin: 0px; }
-<?
+    img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
+    img.cover1        { height: <?php echo (2 * intval($options['imgwidth'])) + 7 ?>px; width: <?php echo (2 * intval($options['imgwidth'])) + 7 ?>px; margin: 0px; }
+<?php
         break;
       case 'default.css' :
       default:
 ?>
-    img.cdcover       { height: <?= $options['imgwidth'] ?>px; width: <?= $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
-<?
+    img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
+<?php
       }
     }
 ?>
   </style>
-<?
+<?php
   }
 
   function log($text) {
@@ -1077,12 +1077,12 @@ function widget_lastfmrecords_init() {
 ?>
     <p style="text-align:right;">
       <label for="lastfmrecords-title">title: 
-        <input style="width: 200px;" id="lastfmrecords-title" name="lastfmrecords-title" type="text" value="<?= $title ?>" />
+        <input style="width: 200px;" id="lastfmrecords-title" name="lastfmrecords-title" type="text" value="<?php echo $title ?>" />
       </label>
     </p>
-    <p>Other options are on the <a href="<?= lastfmrecords_wordpressurl(); ?>wp-admin/plugins.php?page=last.fm.php">options page</a> for this plugin.</p>
+    <p>Other options are on the <a href="<?php echo lastfmrecords_wordpressurl(); ?>wp-admin/plugins.php?page=last.fm.php">options page</a> for this plugin.</p>
     <input type="hidden" id="lastfmrecords-submit" name="lastfmrecords-submit" value="1" />    
-<?
+<?php
   }
 
   # if you want to use it as a widget, it's available
