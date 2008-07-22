@@ -1,105 +1,35 @@
 <?php
 
 # Plugin Name: Last.Fm Records
-# Version: 1.3.2
-# Plugin URI: http://dirkie.nu/projects/lastfmrecords/
-# Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm, amazon and musicbrainz.
-# Author: Dog Of Dirk
-# Author URI: http://dirkie.nu/
+# Version: 1.4
+# Plugin URI: http://jeroensmeets.net/lastfmrecords/
+# Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
+# Author: Jeroen Smeets
+# Author URI: http://jeroensmeets.net/
 
-$_lfm_version = "1.3.2";
+$_lfm_version = "1.4";
 
 define('DEBUG', false);
+define('LASTFM_APIKEY', 'fbfa856cc3af93c43359b57921b1e64e');
 
-if (!function_exists('get_option')) {
-  # why do I always get me in this kind of trouble working outside of wordpress?
-  require_once(dirname(__FILE__) . '/../../../wp-blog-header.php');
-}
+class LastFmRecords {
 
-function lastfmrecords_display($period = false, $count = false) {
-  $lfm = new lastfmrecords();
-  $lfm->display($period, $count);
-}
+  private $albuminfo;
+  # albuminfo is array with elements
+  #   $albuminfo[0]['artist']                artist name, no url encoding
+  #   $albuminfo[0]['title']                 cd title, no url encoding
+  #   $albuminfo[0]['url']                   url to album page on last.fm
+  #   $albuminfo[0]['coverimage']['small']   url to cd cover in three sizes
+  #   $albuminfo[0]['coverimage']['medium']
+  #   $albuminfo[0]['coverimage']['large']
 
-function lastfmrecords_add_pages() {
- if (function_exists('add_options_page')) {
-    # Lorelle told me to put it on the plugins tab
-    add_submenu_page('plugins.php', 'Last.Fm Records', 'Last.Fm Records', 8, basename(__FILE__), 'lastfmrecords_options_page');
-  }
-}
+  # lovedtracks is at the end of the array, which means it will not fall back on other periods
+  private $periods = array('recenttracks', 'weekly', '3month', '6month', '12month', 'overall', 'lovedtracks');
 
-function lastfmrecords_options_page() {
-  $lfm = new lastfmrecords();
-  $lfm->options_page();
-}
-
-function lastfmrecords_stylesheet() {
-  $lfm = new lastfmrecords();
-  $lfm->stylesheet();
-}
-
-function lastfmrecords_siteurl() {
-  $lfm = new lastfmrecords();
-  return $lfm->siteurl();
-}
-
-function lastfmrecords_wordpressurl() {
-  $lfm = new lastfmrecords();
-  return $lfm->wordpressurl();
-}
-
-function lastfm_records_filtercontent($content) {
-  if (false !== strpos($content, '[lastfmrecords')) {
-    $lfm = new lastfmrecords();
-    // extra options?
-    $_period = false;
-    $_count = false;
-    $_options = $lfm->stringbetween($content, '[lastfmrecords|' , ']');
-    if ($_options) {
-      $_options = explode('|', $_options);
-      if (2 == count($_options)) {
-        $_period = $_options[0];
-        $_count  = $_options[1];
-      }
-    }
-    ob_start();
-    $lfm->display($_period, $_count);
-    $result = ob_get_contents();
-    ob_clean();
-    return preg_replace('#\[lastfmrecords.*\]#', $result, $content);
-  } else {
-    return $content;
-  }
-}
-
-class lastfmrecords {
-  # yes, it's a class. Very simple though, as I'm supporting PHP4.
-  # for now it functions as a namespace.  
-
-  function init() {
-	  # nuttin' in it
-  }
-  
-  function path() {
-  	return 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
-  }
-  
-  function siteurl() {
-    $_url = get_option('home');
-    if ("/" != substr($_url, -1)) {
-      $_url .= "/";
-    }
-    return $_url;
-    
-    # $_file  = pathinfo($this->path(), PATHINFO_BASENAME);
-    # $_siteurl = substr($this->path(), 0, -1 * strlen($_file));
-    # # for when we're in the backend
-    # $_siteurl = str_replace('wp-admin/', '', $_siteurl);
-    # 
-    # return $_siteurl;
+  public function __construct() {
   }
 
-  function wordpressurl() {
+  public function wordpressurl() {
     $_url = get_option('siteurl');
     if ("/" != substr($_url, -1)) {
       $_url .= "/";
@@ -107,16 +37,18 @@ class lastfmrecords {
     return $_url;
   }
 
-  function options() {
-    return get_option('lastfm-records');
-  }
+  ################################################
+  # this is the function that generates the html #
+  ################################################
 
-  ################################################################
-  # this is the function that generates the html for the sidebar #
-  ################################################################
+  public function display($period = false, $count = false) {
 
-  function display($period = false, $count = false) {
-    $options = $this->options();
+    # let's start at the very beginning (a very good place to start)
+    $this->log('start of function display');
+
+    $this->albuminfo = array();
+
+    $options = get_option('lastfm-records');
     if ($period) {
       $options['period'] = $period;
     }
@@ -124,85 +56,45 @@ class lastfmrecords {
       $options['count'] = $count;
     }
 
-    # get list for this user
-    $_lastfmlist = $this->getlist($options);
-    if (!$_lastfmlist) {
-      $this->log('getlist returned false');
-  	  echo $options['noimages'];
+    # TODO: determine if this is the best place to clean up the cache
+    $this->cleanupcache($this->cachedir(), $options['username']);
+
+    # get album info for this user
+    $this->getalbuminfo($options);
+    if (0 == count($this->albuminfo)) {
+      $this->log('error in finding images');
+	    echo $options['noimages'];
       return;
     }
 
     echo "\n  <ol id=\"lastfmrecords\">\n";
     $_count = 0;
-    $_albums_done = array();
-    foreach($_lastfmlist as $_title => $_artist) {
+
+    foreach($this->albuminfo as $_album) {
 
       if ($_count == intval($options['count'])) {
         break;
       }
 
-      if ((($_count + 1) == intval($options['count'])) && ('onebig.css' == $options['display'])) {
-        break;
-      }
+      # if ((($_count + 1) == intval($options['count'])) && ('onebig.css' == $options['display'])) {
+      #   break;
+      # }
 
-      # $_title = urlencode($_title);
-
-      # prevent duplicate cd covers
-      if (array_key_exists($_title, $_albums_done)) {
-    	  continue;
-      }
-
-      # is the image in the cache?
-      $_cacheresult = $this->imageincache($_title, $_artist);
-      if (is_array($_cacheresult)) {
-        # cache has an image url
-        $this->log('image for ' . $_title . ' by ' . $_artist . ' found in cache');
-    	  $_imgurl = $_cacheresult['image'];
-      } else if ('noimage' == $_cacheresult) {
-      	# cache says there is no image
-        $this->log('cache says image for ' . $_title . ' by ' . $_artist . ' is not available, so skip to next album');
-    	  continue;
+      if ('' != $_album['coverimage']['medium']) {
+      	$_coverImage = $_album['coverimage']['medium'];
+      } else if ('' != $_album['coverimage']['large']) {
+      	$_coverImage = $_album['coverimage']['large'];
       } else {
-    	  # cache doesn't know, so we try to find it
-        $this->log('cache has no info for ' . $_title . ' by ' . $_artist . ', let`s go out and try to find it:');
-    	  $_cd = $this->getimageurl($_title, $_artist);
-        if (!is_array($_cd)) {
-          $this->log('  no success there');
-          continue;
-        } else {
-          $this->log('  success!');
-        }
-  	    $_imgurl = $_cd['image'];
+      	continue;
       }
 
-      $_albums_done[$_title] = $_artist;
-
-      $_safe_title  = $this->cleanuptext($_title);
-      $_safe_artist = $this->cleanuptext($_artist);
+      $_safeTitle  = str_replace("'", "`", $_album['artist']);
+      $_safeArtist = str_replace("'", "`", $_album['title']);
 ?>
     <li>
-<?php
-      if ('imgwtext.css' == $options['display']) {
-      	# I prefer something other than a table, but that's hard to keep the text together next to the image...
-?>
-      <table><tr valign="top"><td>
-<?php
-      }
-?>
-        <a href='http://www.last.fm/music/<?php echo $_artist ?>/<?php echo $_title ?>/'>
-          <img class='cdcover cover<?php echo $_count + 1 ?>' src='<?php echo $_imgurl ?>' title='<?php echo $_safe_artist ?>: <?php echo $_safe_title ?>' alt='<?php echo $_safe_title ?>' />
-        </a>
-<?php
-      if ('imgwtext.css' == $options['display']) {
-?>
-      </td><td>
-        <a href='http://www.last.fm/music/<?php echo $_artist ?>/<?php echo $_title ?>/'><?php echo $_safe_title ?></a>
-        <br />
-        <?php echo $_safe_artist ?>
-      </td></tr></table>
-<?php
-    }
-?>
+      <a href='<?php echo $_album['url'] ?>'>
+        <img class='cdcover cover<?php echo $_count + 1 ?>' src='<?php echo $_coverImage ?>' title='<?php echo $_safeArtist ?>: <?php echo $_safeTitle ?>' alt='cd cover' />
+      </a>
     </li>
 <?php
       $_count++;
@@ -214,144 +106,250 @@ class lastfmrecords {
 <?php
   }
 
-  ################################################################
-  # get feed from last.fm with cds that the user has listened to #
-  # and parse it into an array that looks like                   #
-  #                                                              #
-  # $array[title] = artist                                       #
-  #                                                              #
-  # this avoids multiple occurences of the same song             #
-  #                                                              #
-  ################################################################
+  # only add new cover images to the big list
+  private function addalbumfound($_newAlbum) {
+    $_inIt = false;
+    foreach($this->albuminfo as $_album) {
+      foreach($_album['coverimage'] as $_size => $_image) {
+        if ($_image == $_newAlbum['coverimage'][$_size]) {
+          $_inIt = true;
+        }
+      }
+    }
+    if (!$_inIt) {
+    	$this->albuminfo[] = $_newAlbum;
+    }
+  }
 
-  function getlist($options) {
+  private function getalbuminfo($options) {
+    # keep falling back to older data until enough albums are found
+    if ('1' == $options['getmore']) {
+      # with which period do we start?
+      $currentperiod = 0;
+      foreach ($this->periods as $periodkey => $periodname) {
+        if ($periodname == $options['period']) {
+          $currentperiod = $periodkey;
+        }
+      }
+      while (($currentperiod <= count($this->periods)) && (count($this->albuminfo) < $options['count'])) {
+      	$options['period'] = $this->periods[$currentperiod];
+      	$this->getlist($options);
+      	$this->log($options['period'] . ' made the album list ' . count($this->albuminfo) . ' items long.');
+
+      	$currentperiod++;
+      }
+    } else {
+      $this->getlist($options);
+    }
+  }
+
+  ####################################################################
+  # get one feed from last.fm with cds that the user has listened to #
+  ####################################################################
+
+  private function getlist($options) {
 
     # where would the cached list be?
     $_cachefile = $this->cachefilename($options);
 
     if (file_exists($_cachefile)) {
       # cachefile exists
-      $this->log('list is in cache');
-      return unserialize(file_get_contents($_cachefile));
+      $this->log($options['period'] . ' list is in cache');
+      $this->albuminfo = unserialize(file_get_contents($_cachefile));
+      return true;
     } else {
       # not cached, get list from last.fm and parse into an array
       $this->log('list is not in cache, get out and get it!');
-      switch($options['period']) {
+
+      switch ($options['period']) {
         case 'recenttracks':
-          $_last_fm_url = 'http://ws.audioscrobbler.com/1.0/user/' . $options['username'] . '/recenttracks.xml';
-          $_result      = $this->loadurl($_last_fm_url);
-          if (!$_result) {
-            $this->log('error fetching recenttracks xml');
-            return false;
-          }
-          $_items       = explode('<track streamable', $_result);
-          $_parsed = array();
-          array_shift($_items);
-          foreach($_items as $_item) {
-            // are artist and cd title available?
-            $_artist  = $this->stringbetween($_item, '<artist', '</artist>');
-            if ($_artist && (false !== strpos($_artist, '">'))) {
-              $_artist  = substr($_artist, strpos($_artist, '">') + 2);
-            }
-            $_cdtitle = $this->stringbetween($_item, '<album', '</album>');
-            if ($_cdtitle && (false !== strpos($_cdtitle, '">'))) {
-              $_cdtitle = substr($_cdtitle, strpos($_cdtitle, '">') + 2);
-            }
-            if ($_artist && $_cdtitle) {
-              // echo "<!--" . $_artist . "--" . $_cdtitle . "-->\n";
-              $this->log('nice, though recenttracks, both artist ' . $_artist . ' and cd title ' . $_cdtitle . ' are in the xml');
-              $_cdtitle = urlencode($_cdtitle);
-              $_artist  = urlencode($_artist);
-              $_parsed[$_cdtitle] = $_artist;
-            } else {
-              $_line = $this->stringbetween($_item, '/music/', '</url>');
-              if ($_line) {
-                # ok, we found a song
-                $_line = explode('/_/', trim($_line));
-
-                $this->log('track ' . $_line[1] . ' and artist ' . $_line[0] . ' found, now let\'s see which cd it\'s on');
-
-                # let's see if we can find the cd title for this song
-                $_title = $this->findcdtitlefortrack($_line[1], $_line[0]);
-                if (!$_title) {
-                  continue;
-                }
-      	        $_title = urlencode($_title);
-                $_parsed[$_title] = $_line[0];
-              }
-            }
-          }
-          $this->writecachefile($_parsed, $_cachefile);
-          return $_parsed;
+          $_last_fm_url = 'http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks'
+                        . '&user=' . $options['username']
+                        . '&limit=50'
+                        . '&api_key=' . LASTFM_APIKEY;
+          break;
+        case 'lovedtracks':
+          $_last_fm_url = 'http://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks'
+                        . '&user=' . $options['username']
+                        . '&api_key=' . LASTFM_APIKEY;
           break;
         case 'weekly':
-          $_last_fm_url = 'http://ws.audioscrobbler.com/1.0/user/' . $options['username'] . '/weeklyalbumchart.xml';
-          $_result      = $this->loadurl($_last_fm_url);
-          if ($_result) {
-            $_items       = explode('<album>', $_result);
-            $_parsed = array();
-            array_shift($_items);
-            foreach($_items as $_item) {
-              $_line = trim($this->stringbetween($_item, 'http://www.last.fm/music/', '</url>'));
-              if ($_line) {
-                $_line = explode('/', $_line);
-                $_parsed[$_line[1]] = $_line[0];
-              }
-            }
-            $this->writecachefile($_parsed, $_cachefile);
-            return $_parsed;
-          } else {
-            return false;
-          }
+          $_last_fm_url = 'http://ws.audioscrobbler.com/2.0/?method=user.getWeeklyAlbumChart'
+                        . '&user=' . $options['username']
+                        . '&api_key=' . LASTFM_APIKEY;
           break;
         default:
-          $_last_fm_url = 'http://www.last.fm/user/' . $options['username'] . '/charts/?subtype=album&charttype=' . $options['period'];
-          $_result      = $this->loadurl($_last_fm_url);
-          if ($_result) {
-            $_parsed = $this->parsehtml($_result, $options);
-            $this->writecachefile($_parsed, $_cachefile);
-            return $_parsed;
-          } else {
-    	      return false;
-    	    }
+          $_last_fm_url = 'http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums'
+                        . '&user=' . $options['username']
+                        . '&period=' . $options['period']
+                        . '&api_key=' . LASTFM_APIKEY;
+      }
+
+      $_result = $this->loadurl($_last_fm_url);
+      if ($_result) {
+        $this->parsexml($_result, $options);
+        $this->writecachefile($this->albuminfo, $_cachefile);
       }
     }
   }
 
-  ############################
-  # used by $this->getlist() #
-  ############################
+  ##############################################
+  # parse xml that was returned by last.fm api #
+  ##############################################
 
-  function parsehtml($_html, $options) {
-    # parse the html from last.fm
-    # this is what we call screenscraping
-    $_albums = explode('<a href="/music/', $_html);
-    array_shift($_albums);
+  private function parsexml($_html, $options) {
+    if (!function_exists('simplexml_load_string')) {
+    	$this->log('Sorry, you need PHP5 for this plugin');
+      return false;
+    }
 
-    $_ta = array();
-    foreach ($_albums as $_k => $_v) {
+    $_xml = $this->createsimplexml($_html);
+    if (!$_xml) {
+      return false;
+    }
 
-      $_v         = substr($_v, 0, strpos($_v, '"'));
-      $_parts     = explode('/', $_v);
+    # different elements in xml for different feeds
+    switch ($options['period']) {
+    	case 'recenttracks':
+    	  $_elem0 = 'recenttracks';
+    	  $_elem1 = 'track';
+    	  break;
+      case 'lovedtracks':
+        $_elem0 = 'lovedtracks';
+    	  $_elem1 = 'track';
+        break;
+      case 'weekly':
+    	  $_elem0 = 'weeklyalbumchart';
+    	  $_elem1 = 'album';
+    	  break;
+      default:
+    	  $_elem0 = 'topalbums';
+    	  $_elem1 = 'album';
+    }
 
-      $_artist    = $_parts[0];
-      # for 'recenttracks', this is the songtitle
-      # we'll deal with this later
-      $_title     = ('recenttracks' == $options['period']) ? $_parts[2] : $_parts[1];
+    foreach ($_xml->{$_elem0}->{$_elem1} as $_item) {
+    	$_newItem = array();
+      $_newItem['artist'] = (('recenttracks' == $options['period'])  || ('weekly' == $options['period']))
+                          ? (string) $_item->artist
+                          : (string) $_item->artist->name;
+      $_newItem['title'] = ('recenttracks' == $options['period'])
+                         ? (string) $_item->album
+                         : (string) $_item->name;
+      $_newItem['url'] = (string) $_item->url;
+      $_newItem['coverimage'] = array();
 
-      if (('+charts' != $_artist) && ('' != $_artist) && ('' != $_title)) {
-        $_ta[$_title] = $_artist;
+      # image info is not in the weekly feed
+      if ('weekly' == $options['period']) {
+        $_images = $this->getimageinfo('album', (string) $_item->mbid);
+        if ($_images) {
+          $_newItem['coverimage'] = $_images;
+          $this->addalbumfound($_newItem);
+        }
+      } else {
+      	# check if urls are found for cover images
+        $_imagefound = false;
+        foreach($_item->image as $_image) {
+          if (('' != (string) $_image) && (false === strpos((string) $_image, '/noimage/'))) {
+          	$_imagefound = true;
+          	$_imgsize = (string) $_image['size'];
+            $_newItem['coverimage'][$_imgsize] = (string) $_image;
+          }
+        }
+        # no covers found, we could try finding it when we have an mbid for the cd
+        if (!$_imagefound) {
+          $_album_mbid = (string) $_item->album['mbid'];
+          if ('' != $_album_mbid) {
+          	$_images = $this->getimageinfo('album', (string) $_item->mbid);
+          	if ($_images) {
+          		$_imagefound = true;
+          		$_newItem['coverimage'] = $_images;
+          	}
+          }
+        }
+        if ($_imagefound) {
+          $this->addalbumfound($_newItem);
+        }
       }
     }
 
-    return $_ta;
+    return (count($this->albuminfo) > 0);
+  }
+
+  # images for an album or an artist
+  private function getimageinfo($_type, $_mbid) {
+    if (('artist' != $_type) && ('album' != $_type)) {
+      return false;
+    }
+
+    if (!$_mbid) {
+      return false;
+    }
+
+    $_last_fm_url = 'http://ws.audioscrobbler.com/2.0/?method=' . $_type . '.getinfo'
+                  . '&mbid=' . $_mbid
+                  . '&api_key=' . LASTFM_APIKEY;
+
+    $_result = $this->loadurl($_last_fm_url);
+    if (!$_result) {
+      return false;
+    }
+
+    $_xml = $this->createsimplexml($_result);
+    if (!$_xml) {
+      return false;
+    }
+
+    $result = array();
+    foreach($_xml->{$_type} as $_item) {
+      foreach($_item->image as $_image) {
+      	if (false === strpos((string) $_image, '/noimage/')) {
+          $_imgsize = (string) $_image['size'];
+          $result[$_imgsize] = (string) $_image;
+        }
+      }
+      # TODO: what if there's more than one album/artist returned?
+      break;
+    }
+
+    return $result;
+  }
+
+  private function createsimplexml($_html) {
+    try {
+      $_xml = @simplexml_load_string($_html);
+    } catch (Exception $e) {
+      $_xml = false;
+    }
+    	
+    return (!$_xml) ? false : $_xml;
+  }
+
+
+  public function filtercontent($content) {
+    while (false !== strpos($content, '[lastfmrecords')) {
+      // extra options?
+      $_period = false;
+      $_count = false;
+      if (false !== eregi('\[lastfmrecords\|([0-9a-z]+)\|([0-9]+)\]', $content, $regs)) {
+      	$_period = $regs[1];
+        $_count  = $regs[2];
+      }
+
+      # TODO: give $this->display() an option to return html
+      ob_start();
+      $this->display($_period, $_count);
+      $result = ob_get_contents();
+      ob_clean();
+      $content = preg_replace('#\[lastfmrecords.*\]#', $result, $content, 1);
+    }
+    return $content;
   }
 
   #########################################################################
   # check if we already know where the image of the cd cover can be found #
   #########################################################################
 
-  function imageincache($_title, $_artist) {
+  private function imageincache($_title, $_artist) {
     # please note that this function can return:
     # 1. an array with data for the url of the image
     # 2. 'noimage' (without the quotes, image is in cache, but no image was found)
@@ -364,51 +362,6 @@ class lastfmrecords {
     } else {
   	  return false;
     }
-  }
-
-  ############################################
-  # find the image for a cd title and artist #
-  ############################################
-
-  function getimageurl($_title, $_artist) {
-    $_r = "http://ws.audioscrobbler.com/1.0/album/" . $_artist . "/" . $_title . "/info.xml";
-
-    # obviously: TODO
-    $_r = str_replace('%5C', '', $_r);
-
-    $_lastfm_xml = $this->loadurl($_r);
-
-    if ($_lastfm_xml) {
-      # large image available?
-      $_imgurl = $this->stringbetween($_lastfm_xml, "<large>", "</large>");
-      if ((!$_imgurl) || (strpos($_imgurl, 'noimage') > 0)) {
-        # large image not available, try medium one
-        $_imgurl = $this->stringbetween($_lastfm_xml, "<medium>", "</medium>");
-      }
-      if (($_imgurl) && (false === strpos($_imgurl, 'noimage'))) {
-        $_imgarray = array(
-                       'image'      => $_imgurl,
-                       'cdtitle'    => $_title,
-                       'artist'     => $_artist
-                     );
-
-        $_options = $this->options();
-        if ('1' == $_options['localthumbs']) {
-          # create local thumbnail in cache
-          $_localthumb = $this->createlocalthumb($_imgarray);
-          if ($_localthumb) {
-            $_imgarray['image'] = $_localthumb;
-          }
-        }
-
-        $this->writecachefile($_imgarray, $this->cachefile_albumdata($_title, $_artist));
-        return $_imgarray;
-      } else {
-        $this->writecachefile('noimage', $this->cachefile_albumdata($_title, $_artist));
-        return false;
-      }
-    }
-    return false;
   }
 
   #######################################################
@@ -514,96 +467,11 @@ class lastfmrecords {
     return false;
   }
 
-  #################################################
-  # send tracktitle and artist to MusicBrainz and #
-  # hopefully get a cd title back                 #
-  #################################################
-
-  function findcdtitlefortrack($_title, $_artist) {
-    # 1. musicbrainz.org
-    $_result = $this->findcdtitlefortrackatmusicbrainz($_title, $_artist);
-    if ($_result) {
-      $this->log('found through musicbrainz! It\'s on ' . $_result);
-      return $_result;
-    }
-
-    # 2. amazon
-    $_result = $this->findcdtitlefortrackatamazon($_title, $_artist);
-    if ($_result) {
-      $this->log('found through amazon! It\'s on ' . $_result);
-      return $_result;
-    }
-
-    return false;
-  }
-
-  function findcdtitlefortrackatmusicbrainz($_title, $_artist) {
-    $_url = "http://musicbrainz.org/ws/1/track/?type=xml&title=" . $_title . "&artist=" . $_artist;
-
-    $_musicbrainz = $this->loadurl($_url);
-
-    if ($_musicbrainz) {
-      $_items = explode('<track id', $_musicbrainz);
-      array_shift($_items);
-      foreach($_items as $_item) {
-        $_artistfound = $this->stringbetween($_item, '<name>', '</name>');
-        # does this artist's name 'sound' like the one we're looking for?
-        # this way, Sansévérino and Sanseverino are matched
-        $_cleanartist = urldecode($_artist);
-        if (soundex($_artistfound) == soundex($_cleanartist)) {
-    	    $_songtitle = $this->stringbetween($_item, '<release-list>', '</release-list>');
-    	    if ($_songtitle) {
-    	      $_songtitle = $this->stringbetween($_songtitle, '<title>', '</title>');
-    	      return $_songtitle;
-    	    }
-        }
-      }
-    }
-    
-    # not found
-    return false;
-  }
-
-  ####################################################
-  # send tracktitle and artist to the Amazon API and #
-  # hopefully get a cd title back                    #
-  ####################################################
-
-  function findcdtitlefortrackatamazon($_title, $_artist) {
-    $_apikey = '17CBJCAMVX5V38CR0F02';
-
-    $_r = "http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&SearchIndex=MusicTracks&" . 
-          "AWSAccessKeyId=" . $_apikey . "&Operation=ItemSearch&ResponseGroup=Small&" . 
-          "Keywords=" . $_title;
-
-    $_amazon_xml = $this->loadurl($_r);
-  
-    if ($_amazon_xml) {
-      $_artist = urldecode($_artist);
-
-      # terrible way of parsing XML
-      $_items = explode('<Item>', $_amazon_xml);
-	    array_shift($_items);
-      foreach ($_items as $_k => $_v) {
-        $_artistfound = $this->stringbetween($_v, '<Artist>', '</Artist>');
-        # does this artist's name 'sound' like the one we're looking for?
-        # this way, Sansévérino and Sanseverino are matched
-        if (soundex($_artistfound) == soundex($_artist)) {
-    	    $_title = $this->stringbetween($_v, '<Title>', '</Title>');
-    	    return $_title;
-        }
-      }
-    }
-
-    # not found
-    return false;
-  }
-
   ############################################
   # serialize $_array and write it to $_file #
   ############################################
 
-  function writecachefile($_array, $_file, $_append = false) {
+  private function writecachefile($_array, $_file, $_append = false) {
     $_ser = serialize($_array);
     # write to cache
     if ($_append) {
@@ -617,7 +485,7 @@ class lastfmrecords {
     }
   }
 
-  function cleanupcache($_dir, $_lastfmusername) {
+  private function cleanupcache($_dir, $_lastfmusername) {
     # in theory, in multi user wordpress environments,
     # diffent blogs can display cd covers from the same
     # last.fm user
@@ -630,9 +498,9 @@ class lastfmrecords {
     # 24 files before deleting them.
     if ($handle = @opendir($_dir)) {
       while (false !== ($_file = readdir($handle))) {
-        # we skip everything that's not .cache, as other files are cd data
-        if ("cache" == substr($_file, -5)) {
-          # ok, it's cache. is it for the current last.fm user?
+        # we skip everything that's not .list, as other files are cd data
+        if (".list" == substr($_file, -5)) {
+          # ok, it's a cached list. is it for the current last.fm user?
           if ($_lastfmusername == substr($_file, 0, strlen($_lastfmusername))) {
             # now, if it's not from today, we can delete it
             if (false === strpos($_file, "." . date("ymd"))) {
@@ -647,7 +515,7 @@ class lastfmrecords {
     return true;
   }
 
-  function loadurl($_url) {
+  private function loadurl($_url) {
     $_result = false;
 
     # added curl for Dreamhost etc.
@@ -672,43 +540,32 @@ class lastfmrecords {
     return $_result;
   }
 
-  function stringbetween($s, $start, $end) {
-    if ((strpos($s, $start) === false) || (strpos($s, $end) === false)) {
-      return false;
-    }
-    $s = substr($s, strpos($s, $start) + strlen($start));
-    return substr($s, 0, strpos($s, $end));
-  }
-
-  function cachefilename($options) {
-
-    # TODO: determine if this is the best place to clean up the cache
-    $this->cleanupcache($this->cachedir(), $options['username']);
+  private function cachefilename($options) {
 
     # this function returns
-    # [lastfmname].[datepart].[period].cache
+    # [lastfmname].[datepart].[period].list
 
     # refresh every hour for recent tracks
     $_datepart = ("recenttracks" == $options['period']) ? date("ymdH") : date("ymd");
 
-    return $this->cachedir() . $options['username'] . "." . $_datepart . "." . $options['period'] . ".cache";
+    return $this->cachedir() . $options['username'] . "." . $_datepart . "." . $options['period'] . ".list";
   }
 
-  function cachefile_albumdata($_title, $_artist) {
+  private function cachefile_albumdata($_title, $_artist) {
     return $this->cachedir() . base64_encode($_artist . '#_#' . $_title) . '.albumdata';
   }
 
-  function cachedir() {
+  private function cachedir() {
     # for reading from and writing to cache
     return dirname(__FILE__) . DIRECTORY_SEPARATOR . "cache" . DIRECTORY_SEPARATOR;
   }
 
-  function cleanuptext($_string) {
+  private function cleanuptext($_string) {
     # TODO we have to simplify this a bit ;-)
     return urldecode(str_replace(array("'", "%26"), array("`", "&"), urldecode($_string)));
   }
 
-  function options_page() {
+  public function options_page() {
 
     ######################################################################
     # direct calls to this script with a $_POST['ut'] and a $_POST['ua'] #
@@ -742,7 +599,7 @@ class lastfmrecords {
     }
 
     # Get our options and see if we're handling a form submission.
-    $options = $this->options();
+    $options = get_option('lastfm-records');
     if (!is_array($options) ) {
       $options = array('title'      => 'last.fm records',
                        'username'   => '',
@@ -770,6 +627,7 @@ class lastfmrecords {
       $options['noimages']    = strip_tags(stripslashes($_POST['lastfm-noimages']));
       $options['period']      = strip_tags(stripslashes($_POST['lastfm-period']));
       $options['localthumbs'] = strip_tags(stripslashes($_POST['lastfm-localthumbs']));
+      $options['getmore']     = strip_tags(stripslashes($_POST['lastfm-getmore']));
 
       update_option('lastfm-records', $options);
 
@@ -797,7 +655,7 @@ class lastfmrecords {
     # html for options page
 ?>
 <div class="wrap">
-  <h2>Last.fm Records Options</h2>
+  <h2>Options for Last.fm Records</h2>
   <form method=post action="<?php echo $_SERVER['PHP_SELF']; ?>?page=last.fm.php">
     <input type="hidden" name="update" value="true">
     <fieldset class="options">
@@ -806,9 +664,7 @@ class lastfmrecords {
           <th scope="row">last.fm username</th> 
           <td>
             <input name="lastfm-username" type="text" id="lastfm-username" value="<?php echo $options['username']; ?>" size="40" /><br />
-            If you don't have a username, go get a free account at <a href="http://www.last.fm/" target="_blank">last.fm</a>. This plugin<br />
-            needs special account pages at last.fm to function. These pages<br />
-            are empty when you start using last.fm (takes approx. 5 days).
+            If you don't have a username, go get a free account at <a href="http://www.last.fm/" target="_blank">last.fm</a>.
           </td>
         </tr>
         <tr valign="top"> 
@@ -816,25 +672,33 @@ class lastfmrecords {
           <td>
             <select style="width: 200px;" id="lastfm-period" name="lastfm-period">
               <option value="recenttracks"<?php if ('recenttracks' == $options['period']) { echo ' selected'; } ?>>recent tracks</option>
-              <option value="weekly"<?php  if ('weekly'  == $options['period']) { echo ' selected'; } ?>>last week</option>
-              <option value="3month"<?php  if ('3month'  == $options['period']) { echo ' selected'; } ?>>last 3 months</option>
-              <option value="6month"<?php  if ('6month'  == $options['period']) { echo ' selected'; } ?>>last 6 months</option>
-              <option value="12month"<?php if ('12month' == $options['period']) { echo ' selected'; } ?>>last 12 months</option>
-              <option value="overall"<?php if ('overall' == $options['period']) { echo ' selected'; } ?>>give me everything</option>
+              <option value="weekly"<?php       if ('weekly'       == $options['period']) { echo ' selected'; } ?>>last week</option>
+              <option value="3month"<?php       if ('3month'       == $options['period']) { echo ' selected'; } ?>>last 3 months</option>
+              <option value="6month"<?php       if ('6month'       == $options['period']) { echo ' selected'; } ?>>last 6 months</option>
+              <option value="12month"<?php      if ('12month'      == $options['period']) { echo ' selected'; } ?>>last 12 months</option>
+              <option value="overall"<?php      if ('overall'      == $options['period']) { echo ' selected'; } ?>>give me everything</option>
+              <option value="lovedtracks"<?php  if ('lovedtracks'  == $options['period']) { echo ' selected'; } ?>>loved tracks</option>
             </select><br />
-            Last.fm provides summarized data over several periods. You can select the period here.
+            Last.fm provides summarized data over several periods. You can select the period here.<br /><br />
+            'loved tracks' is new in version 1.4: in the last.fm client is a big heart to express your love for a track. If you do, the cd's will show up here.
           </td>
         </tr>
-        <tr valign="top"> 
-          <th scope="row">how to display the images</th>
-          <td>
-            <select style="width: 200px;" id="lastfm-display" name="lastfm-display">
-              <option value="default.css"<?php if ('default.css' == $options['display']) { echo ' selected'; } ?>>All images equal in size</option>
-              <option value="onebig.css"<?php if ('onebig.css' == $options['display']) { echo ' selected'; } ?>>First image twice as big</option>
-              <option value="imgwtext.css"<?php if ('imgwtext.css' == $options['display']) { echo ' selected'; } ?>>Image with text</option>
-            </select>
-          </td>
-        </tr>
+<?php
+        # removed temporarily in version 1.4
+        # TODO: add support for lightbox and its siblings
+        # TODO: add images with text back in
+
+        # <tr valign="top"> 
+        #   <th scope="row">how to display the images</th>
+        #   <td>
+        #     <select style="width: 200px;" id="lastfm-display" name="lastfm-display">
+        #       <option value="default.css"<?php if ('default.css' == $options['display']) { echo ' selected'; } ?>>All images equal in size</option>
+        #       <option value="onebig.css"<?php if ('onebig.css' == $options['display']) { echo ' selected'; } ?>>First image twice as big</option>
+        #       <option value="imgwtext.css"<?php if ('imgwtext.css' == $options['display']) { echo ' selected'; } ?>>Image with text</option>
+        #     </select>
+        #   </td>
+        # </tr>
+?>
         <tr valign="top"> 
           <th scope="row">add stylesheet</th> 
           <td>
@@ -852,6 +716,18 @@ class lastfmrecords {
             The maximum of cd covers to display
           </td>
         </tr>
+        <tr valign="top">
+          <th scope="row">get more images<br />if necessary</th>
+          <td>
+            <select style="width: 200px;" id="lastfm-getmore" name="lastfm-getmore">
+              <option value="0"<?php if ('0' == $options['getmore']) { echo ' selected'; } ?>>No</option>
+              <option value="1"<?php if ('1' == $options['getmore']) { echo ' selected'; } ?>>Yes</option>
+            </select><br />
+            If you set this option to Yes, the plugin will look for more images from other periods if not enough images have been found.<br />
+            For example, if Period is set to 'Recent tracks' and you are on holiday, the plugin will find cds you listened to last week or in the
+            last three months to get enough images on your page.
+          </td>
+        </tr>
         <tr valign="top"> 
           <th scope="row">image width</th> 
           <td>
@@ -865,6 +741,7 @@ class lastfmrecords {
             Text to display when there are no images to display
           </td>
         </tr>
+        <!-- 
         <tr valign="top"> 
           <th scope="row">save thumbnails to cache</th> 
           <td>
@@ -877,6 +754,15 @@ class lastfmrecords {
             a little longer when the plugin finds a cd for the first time.<br />
             <br />
             Obviously, setting it to yes takes up more disk space.
+          </td>
+        </tr>
+        -->
+        <tr valign="top">
+          <th scope="row">Send the author<br />of this plugin<br />some earthly love</th>
+          <td>
+            <a href="https://www.amazon.com/gp/registry/wishlist/2XZPC0CD6SILM/ref=wl_web/">
+              <img src="https://images-na.ssl-images-amazon.com/images/G/01/gifts/registries/wishlist/v2/web/wl-btn-129-b._V52198553_.gif" width="129" alt="My Amazon.com Wish List" height="42" />
+            </a>
           </td>
         </tr>
       </table>
@@ -914,48 +800,12 @@ class lastfmrecords {
   <br /><br /><br />
 <?php
     }
-
-    global $_lfm_version;
 ?>
-<!--
-  <script type="text/javascript">
-    function ow() {
-    	var nW = window.open(
-                 'http://dirkie.nu/downloads/lastfmrecords.popup.php?version=<?php echo $_lfm_version ?>',
-                 'checkversion',
-                 'height=200,width=300,status=no,toolbar=no,menubar=no,location=no'
-               );
-      return false;
-    }
-  </script>
--->
-  <h2>Miscellaneous</h2>
-  <table class="optiontable"> 
-<!--
-    <tr valign="top">
-      <th scope="row">am I using the latest version?</th>
-      <td>
-    	  <a href="#" onclick="return ow();">
-          check for new version at dirkie.nu
-        </a>      
-      </td>
-    </tr>
--->
-    <tr valign="top">
-      <th scope="row">I really like this plugin! Will you accept my eternal gratitude?</th>
-      <td>
-        <a href="https://www.amazon.com/gp/registry/wishlist/2XZPC0CD6SILM/ref=wl_web/">
-          <img src="https://images-na.ssl-images-amazon.com/images/G/01/gifts/registries/wishlist/v2/web/wl-btn-129-b._V52198553_.gif" width="129" alt="My Amazon.com Wish List" height="42" />
-        </a>
-      </td>
-    </tr>
-  </table>
-  <br /><br /><br />
 </div>
 <?php
   }
 
-  function getmissingcovers() {
+  private function getmissingcovers() {
     $result = "";
     $count = 0;
     $_dir = $this->cachedir();
@@ -1000,8 +850,8 @@ class lastfmrecords {
     }
   }
 
-  function stylesheet() {
-    $options = $this->options();
+  public function stylesheet() {
+    $options = get_option('lastfm-records');
     if ('0' == $options['stylesheet']) {
       return false;
     }
@@ -1013,38 +863,23 @@ class lastfmrecords {
 <?php
   # people using their own class in css?
   if (0 != intval($options['imgwidth'])) {
-    switch($options['display']) {
-      case 'imgwtext.css':
-?>
-    #lastfmrecords a  { font-weight: bold; }
-    img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
-<?php
-        break;
-      case 'onebig.css'  :
-?>
-    img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
-    img.cover1        { height: <?php echo (2 * intval($options['imgwidth'])) + 7 ?>px; width: <?php echo (2 * intval($options['imgwidth'])) + 7 ?>px; margin: 0px; }
-<?php
-        break;
-      case 'default.css' :
-      default:
 ?>
     img.cdcover       { height: <?php echo $options['imgwidth'] ?>px; width: <?php echo $options['imgwidth'] ?>px; margin: 0px 5px 5px 0px; border: 0px; }
 <?php
       }
-    }
 ?>
   </style>
 <?php
   }
 
-  function log($text) {
+  private function log($text) {
     if (DEBUG) {
-      $text = date("y-m-j h:i:s ") . $text . "\n";
-      $_f = @fopen(dirname(__FILE__) . '/lastfmrecords.log', 'a');
-      fwrite($_f, $text, strlen($text));
+      file_put_contents(
+        dirname(__FILE__) . '/lastfmrecords.log',
+        date("y-m-j h:i:s ") . $text . "\n",
+        FILE_APPEND);
     }
-  } 
+  }
 }
 
 # this function gets called when widgets are supported
@@ -1061,7 +896,8 @@ function widget_lastfmrecords_init() {
     $options = get_option('lastfm-records');
 
     echo "\n\n" . $before_widget . $before_title . $options['title'] . $after_title . "\n";
-    lastfmrecords_display();
+    $lfm = new LastFmRecords();
+    $lfm->display();
 		echo $after_widget . "\n\n";
   }
 
@@ -1102,5 +938,42 @@ add_action('wp_head', 'lastfmrecords_stylesheet');
 add_action('plugins_loaded', 'widget_lastfmrecords_init');
 
 # to display cd covers on a page
-add_filter('the_content', 'lastfm_records_filtercontent');
+add_filter('the_content', 'lastfmrecords_filtercontent');
+
+#####################################################################
+# some functions to help Wordpress get into the LastFmRecords class #
+#####################################################################
+
+function lastfmrecords_display($period = false, $count = false) {
+  $lfm = new LastFmRecords();
+  $lfm->display($period, $count);
+}
+
+function lastfmrecords_wordpressurl() {
+  $lfm = new LastFmRecords();
+  return $lfm->wordpressurl();
+}
+
+function lastfmrecords_add_pages() {
+  if (function_exists('add_options_page')) {
+    # Lorelle told me to put it on the plugins tab
+    add_submenu_page('plugins.php', 'Last.Fm Records', 'Last.Fm Records', 8, basename(__FILE__), 'lastfmrecords_options_page');
+  }
+}
+
+function lastfmrecords_options_page() {
+  $lfm = new LastFmRecords();
+  $lfm->options_page();
+}
+
+function lastfmrecords_stylesheet() {
+  $lfm = new LastFmRecords();
+  $lfm->stylesheet();
+}
+
+function lastfmrecords_filtercontent($content) {
+  $lfm = new LastFmRecords();
+  return $lfm->filtercontent($content);
+}
+
 ?>
