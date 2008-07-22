@@ -88,8 +88,12 @@ class LastFmRecords {
       	continue;
       }
 
-      $_safeTitle  = str_replace("'", "`", $_album['artist']);
-      $_safeArtist = str_replace("'", "`", $_album['title']);
+      # TODO: there's more to explore?
+      $_replace   = array("'", "&");
+      $_replaceby = array("`", "&amp;");
+      $_safeTitle  = str_replace($_replace, $_replaceby, $_album['artist']);
+      $_safeArtist = str_replace($_replace, $_replaceby, $_album['title']);
+
 ?>
     <li>
       <a href='<?php echo $_album['url'] ?>'>
@@ -806,6 +810,10 @@ class LastFmRecords {
   }
 
   private function getmissingcovers() {
+
+  	# not available in version 1.4
+  	return false;
+
     $result = "";
     $count = 0;
     $_dir = $this->cachedir();
