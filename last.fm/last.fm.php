@@ -687,22 +687,6 @@ class LastFmRecords {
             'loved tracks' is new in version 1.4: in the last.fm client is a big heart to express your love for a track. If you do, the cd's will show up here.
           </td>
         </tr>
-<?php
-        # removed temporarily in version 1.4
-        # TODO: add support for lightbox and its siblings
-        # TODO: add images with text back in
-
-        # <tr valign="top"> 
-        #   <th scope="row">how to display the images</th>
-        #   <td>
-        #     <select style="width: 200px;" id="lastfm-display" name="lastfm-display">
-        #       <option value="default.css"<?php if ('default.css' == $options['display']) { echo ' selected'; } ?>>All images equal in size</option>
-        #       <option value="onebig.css"<?php if ('onebig.css' == $options['display']) { echo ' selected'; } ?>>First image twice as big</option>
-        #       <option value="imgwtext.css"<?php if ('imgwtext.css' == $options['display']) { echo ' selected'; } ?>>Image with text</option>
-        #     </select>
-        #   </td>
-        # </tr>
-?>
         <tr valign="top"> 
           <th scope="row">add stylesheet</th> 
           <td>
