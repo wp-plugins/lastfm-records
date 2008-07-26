@@ -1,20 +1,20 @@
 <?php
 
 # Plugin Name: Last.Fm Records
-# Version: 1.4
+# Version: 1.4.1
 # Plugin URI: http://jeroensmeets.net/lastfmrecords/
 # Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 # Author: Jeroen Smeets
 # Author URI: http://jeroensmeets.net/
 
-$_lfm_version = "1.4";
+$_lfm_version = "1.4.1";
 
 define('DEBUG', false);
 define('LASTFM_APIKEY', 'fbfa856cc3af93c43359b57921b1e64e');
 
 class LastFmRecords {
 
-  private $albuminfo;
+  private $albuminfo = array();
   # albuminfo is array with elements
   #   $albuminfo[0]['artist']                artist name, no url encoding
   #   $albuminfo[0]['title']                 cd title, no url encoding
@@ -45,8 +45,6 @@ class LastFmRecords {
 
     # let's start at the very beginning (a very good place to start)
     $this->log('start of function display');
-
-    $this->albuminfo = array();
 
     $options = get_option('lastfm-records');
     if ($period) {
@@ -106,7 +104,7 @@ class LastFmRecords {
     global $_lfm_version;
 ?>
   </ol>
-  <!-- Last.Fm Records <?php echo $_lfm_version ?> (<?php echo $options['username'] ?>, <?php echo $options['period'] ?>, <?php echo $options['display'] ?>) -->
+  <!-- Last.Fm Records <?php echo $_lfm_version ?> (<?php echo $options['username'] ?>, <?php echo $options['period'] ?> ?>) -->
 <?php
   }
 
@@ -136,11 +134,12 @@ class LastFmRecords {
         }
       }
       while (($currentperiod <= count($this->periods)) && (count($this->albuminfo) < $options['count'])) {
-      	$options['period'] = $this->periods[$currentperiod];
+        // echo $options['period'] . ':' . count($this->albuminfo) . '<hr />';
       	$this->getlist($options);
       	$this->log($options['period'] . ' made the album list ' . count($this->albuminfo) . ' items long.');
 
       	$currentperiod++;
+      	$options['period'] = $this->periods[$currentperiod];
       }
     } else {
       $this->getlist($options);
@@ -159,7 +158,12 @@ class LastFmRecords {
     if (file_exists($_cachefile)) {
       # cachefile exists
       $this->log($options['period'] . ' list is in cache');
-      $this->albuminfo = unserialize(file_get_contents($_cachefile));
+      // ha, bug found! can't replace the whole array, have to add to it.
+      // $this->albuminfo = unserialize(file_get_contents($_cachefile));
+      $_cachelist = unserialize(file_get_contents($_cachefile));
+      foreach($_cachelist as $_cachecd) {
+        $this->addalbumfound($_cachecd);
+      }
       return true;
     } else {
       # not cached, get list from last.fm and parse into an array
@@ -660,7 +664,7 @@ class LastFmRecords {
 ?>
 <div class="wrap">
   <h2>Options for Last.fm Records</h2>
-  <form method=post action="<?php echo $_SERVER['PHP_SELF']; ?>?page=last.fm.php">
+  <form method=post action="<?php echo $_SERVER['PHP_SELF']; ?>?page=<?php echo strtolower(basename(__FILE__)); ?>">
     <input type="hidden" name="update" value="true">
     <fieldset class="options">
       <table class="optiontable"> 
@@ -821,7 +825,7 @@ class LastFmRecords {
             $result .= '      <td>' . "\n";
             $result .= '        <a target="_blank" href="http://images.google.com/images?hl=en&q=+%22' . $_ta[0] . '%22+%22' . $_ta[1] . '%22">[find image]</a>&nbsp;&nbsp;&nbsp;<a href="#" onclick="return showupload(' . $count . ');">' . urldecode($_ta[1]) . "</a><br /><br />\n";
             $result .= '        <span id="upload' . $count . '" style="display: none;">' . "\n";
-            $result .= '          <form enctype="multipart/form-data" method="post" action="' . $_SERVER['PHP_SELF'] . '?page=last.fm.php">' . "\n";
+            $result .= '          <form enctype="multipart/form-data" method="post" action="' . $_SERVER['PHP_SELF'] . '?page=' . strtolower(basename(__FILE__)) . '">' . "\n";
             $result .= '            <input type="hidden" name="ua" value="' . $_ta[0] . '" />' . "\n";
             $result .= '            <input type="hidden" name="ut" value="' . $_ta[1] . '" />' . "\n";
             $result .= '            <input type="file" name="uf" value="" />' . "\n";
@@ -908,7 +912,7 @@ function widget_lastfmrecords_init() {
         <input style="width: 200px;" id="lastfmrecords-title" name="lastfmrecords-title" type="text" value="<?php echo $title ?>" />
       </label>
     </p>
-    <p>Other options are on the <a href="<?php echo lastfmrecords_wordpressurl(); ?>wp-admin/plugins.php?page=last.fm.php">options page</a> for this plugin.</p>
+    <p>Other options are on the <a href="<?php echo lastfmrecords_wordpressurl(); ?>wp-admin/plugins.php?page=<?php echo strtolower(basename(__FILE__)); ?>">options page</a> for this plugin.</p>
     <input type="hidden" id="lastfmrecords-submit" name="lastfmrecords-submit" value="1" />    
 <?php
   }

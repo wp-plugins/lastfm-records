@@ -36,7 +36,7 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
    will display the cover of the last cd you listened to.
 7. In all other cases, use `<?php lastfmrecords_display(); ?>` in your templates
 
-   This function accepts two (optional!) arguments: `period` (lovedtracks, recenttracks, weekly, 3month, 6month, 12month, overall or lovedtracks) and `count` (any number bigger than 0)
+   This function accepts two (optional!) arguments: `period` (recenttracks, weekly, 3month, 6month, 12month, overall or lovedtracks) and `count` (any number bigger than 0)
    
    For example: `<?php lastfmrecords_display('weekly', 4); ?>` displays the 4 cds you listened to the most in the last week. If you do not add these, the values from the options page will be used.
 
