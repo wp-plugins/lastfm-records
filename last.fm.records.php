@@ -3,7 +3,7 @@
 Plugin Name: Last.Fm Records
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
-Version: 1.5
+Version: 1.5.1
 Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Author URI: http://jeroensmeets.net/
 License:  GPL
@@ -19,6 +19,9 @@ if ( ! defined( 'WP_PLUGIN_URL' ) )
 if ( ! defined( 'WP_PLUGIN_DIR' ) )
       define( 'WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins' );
 
+// has this plugin been installed in its own directory?
+define('LFR_URL', (basename(dirname(__FILE__)) != 'plugins') ? WP_PLUGIN_URL . '/' . basename(dirname(__FILE__)) : '');
+
 	//////////////////////////////////////////////////////////////////////
 	// WRITE JAVASCRIPT TO THE HEADER WHEN ENOUGH CONFIG HAS BEEN SAVED //
 	//////////////////////////////////////////////////////////////////////
@@ -31,7 +34,7 @@ function lfr_add_javascript() {
 <?php
 	} else {
 ?>
-  <script type='text/javascript' src='<?php echo WP_PLUGIN_URL; ?>/last.fm.records/last.fm.records.js'></script>
+  <script type='text/javascript' src='<?php echo LFR_URL; ?>/last.fm.records.js'></script>
   <script type='text/javascript'>
     var _config = { username: '<?php echo $options['username']; ?>',
                     placeholder: '<?php echo $options['placeholder']; ?>',
