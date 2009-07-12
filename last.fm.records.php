@@ -1,11 +1,13 @@
 <?php
-
-# Plugin Name: Last.Fm Records
-# Version: 1.5
-# Plugin URI: http://jeroensmeets.net/lastfmrecords/
-# Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
-# Author: Jeroen Smeets
-# Author URI: http://jeroensmeets.net/
+/*
+Plugin Name: Last.Fm Records
+Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
+Author: Jeroen Smeets
+Version: 1.5
+Plugin URI: http://jeroensmeets.net/lastfmrecords/
+Author URI: http://jeroensmeets.net/
+License:  GPL
+*/
 
 // Pre-2.6 compatibility
 if ( ! defined( 'WP_CONTENT_URL' ) )
