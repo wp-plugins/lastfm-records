@@ -3,32 +3,65 @@ Contributors: hondjevandirkie
 Tags: lastfm, last.fm, cd cover, amazon, plugin, widget, music, images, sidebar
 Requires at least: 2.0
 Tested up to: 2.8.1
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can behave as a widget.
 
 == Description ==
 
-This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm. YOu can set it to get updates each x minutes.
+This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm.
 
 == Installation ==
 
 1. Upload the folder `last.fm` to the `wp-content/plugins` directory.
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Configure under `Settings` >> `Last.Fm Records`
-4. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and enable the widget. Here you can add a title for the widget.
+2. Make sure jQuery is included in your template. If it is not, you can add the following line to header.php in your theme
 
-== Frequently Asked Questions ==
+`<script type='text/javascript' src='/wp-includes/js/jquery/jquery.js'></script>`
 
-= What are all this options I get? =
+If your blog is in a subdirectory, it should be changed to
 
-* **last.fm username**: your username at last.fm.
-* **add stylesheet**: the plugin can add some layout info.
-* **image count**: the maximum number of cd covers you want.
-* **image width**: the desired width and height of the images. You can set this to zero and use `img.cdcover` in your stylesheet. If you do not know what this means, try some numbers between 75 and 130.
+`<script type='text/javascript' src='/SUBDIRECTORY/wp-includes/js/jquery/jquery.js'></script>`
+   
+3. Activate the plugin through the 'Plugins' menu in WordPress
+4. Configure under `Settings` >> `Last.Fm Records`
+5. If you want to show the cd covers in your sidebar and your Wordpress installation is widget-ready, go to the widgets settings and enable the widget. Here you can add a title for the widget.
 
-== todo list ==
+== Use it without Wordpress ==
 
-1. 'Get more images if necessary', that is getting info from last week/month/ etc. is not working in version 1.5. Prio 1.
-2. Using [lastfmrecords|x|y] in a page or post doesn't work in version 1.5.
-3. fix highslide/lightbox option
+= Can I use this widget without Wordpress? =
+
+Yes you can! Just include the javascript file from the zip and call it from your webpage.
+
+An example:
+
+<div id="lastfmrecords"></div>
+<script type='text/javascript' src='/PATH/TO/jquery.js'></script>
+<script type="text/javascript">
+  jQuery(document).ready( function() {
+  var _config = {
+    username: 'YOURUSERNAME', // last.fm username
+    count: 10,                // number of images to show
+    refresh: 1,               // when to get new data from last.fm (in minutes)
+    offset: 1                 // difference between your timezone and GMT.
+  };
+ lastFmRecords.init(_config);
+</script>
+
+You also need some styling to get things nice and shiny:
+
+<style type="text/css">
+  #lastfmrecords        { padding: 0px; padding-bottom: 10px; }
+
+  /* thx to http://cssglobe.com/lab/overflow_thumbs/ */
+  #lastfmrecords ol,
+    #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
+  #lastfmrecords li          { float: left; margin: 0px 5px 5px 0px; }
+  #lastfmrecords a           { display: block; float: left; width: 100px; height: 100px;
+                               line-height: 100px; overflow: hidden; position: relative; z-index: 1; }
+  #lastfmrecords a img       { float: left; position: absolute; margin: auto; min-height: 100px; }
+
+  /* mouse over */
+  #lastfmrecords a:hover     { overflow:visible; z-index:1000; border:none; }
+  #lastfmrecords a:hover img { border: 1px  solid #999; background: #fff; padding: 3px; 
+                               margin-top: -20px; margin-left: -20px; min-height: 120px;  }
+</style>

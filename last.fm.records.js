@@ -9,13 +9,6 @@
 // you have to change the API key. For more info, see
 // http://www.last.fm/api/account
 
-// TODO
-
-// 3. fix highslide/lightbox option
-// 2. Using [lastfmrecords|x|y] in a page or post doesn't work at the moment.
-// 1. Get more images if necessary
-//    not working ok, trying to fix this ASAP
-
 var lastFmRecords = (function() {
 
   // private, reachable through public setters
@@ -27,7 +20,7 @@ var lastFmRecords = (function() {
   var _placeholder   = 'lastfmrecords';
   var _defaultthumb  = 'http://cdn.last.fm/depth/catalogue/noimage/cover_85px.gif';
   var _debug         = false;
-  var _gmt_offset    = +1;
+  var _gmt_offset    = '+1';
 
 	/////////////
 	// private //
@@ -43,12 +36,34 @@ var lastFmRecords = (function() {
     if (_debug)
       if ('undefined' != typeof console)
         if ('function' == typeof console.log)
-          console.log('last.fm.records: ' + text);
+          if ('object' == typeof text)
+            console.log(text);
+          else
+            console.log('last.fm.records: ' + text);
   };
 
   function _getLastFMData() {
+    var _method = false;
+    switch(_period) {
+    	case 'lovedtracks':
+    		_method = 'user.getlovedtracks';
+    		break;
+    	case 'topalbums':
+    		_method = 'user.gettopalbums';
+    		break;
+    	case 'overall':
+    	case '7day':
+    	case '3month':
+    	case '6month':
+    	case '12month':
+    		_method = 'user.gettopalbums&period=' + _period;
+    		break;
+    	default:
+    		_method = 'user.getrecenttracks';
+    }
+    _logStatus('gettings last.fm info for period ' + _period + ' (method in last.fm api is ' + _method + ')');
     jQuery.getJSON(
-    	_LASTFM_WS_URL + '?method=user.getrecenttracks&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&limit=50&format=json&callback=?',
+    	_LASTFM_WS_URL + '?method=' + _method + '&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&limit=50&format=json&callback=?',
     	lastFmRecords.processLastFmData
     );
   };
@@ -111,8 +126,22 @@ var lastFmRecords = (function() {
 			return false;
 		}
 
-		// no error, so we expect recent tracks info
-  	data = data.recenttracks.track;
+		// get the cd data from the json
+		switch(_period) {
+      case 'recenttracks':
+        data = data.recenttracks.track;
+        break;
+      case 'lovedtracks':
+        data = data.lovedtracks.track;
+        break;
+      default:
+        data = data.topalbums.album;
+	  }
+
+		if (!data) {
+			_logStatus('No return data from Last.fm');
+			return false;
+		}
 
     // loop through tracks
     // jQuery('track', data).each( function(key) {
@@ -120,18 +149,21 @@ var lastFmRecords = (function() {
       if (i > _count) {
         return false;
       }
-
       var track = [];
-      track.cdcover    = _findLargestImage(_json.image);
-      track.artistname = _json.artist['#text'];
+      track.cdcover    = _json.image ? _findLargestImage(_json.image) : false;
+      track.artistname = _json.artist['#text'] || _json.artist.name;
       track.artistmbid = _json.artist['mbid'];
       track.name       = _json.name;
       track.mbid       = _json.mbid;
       track.url        = _json.url;
-			if ('true' == _json.nowplaying) {
-      	track.time     = 'listening now';
+			if ('recenttracks' == _period) {
+				if ('true' == _json.nowplaying) {
+      		track.time     = 'listening now';
+      	} else {
+      		track.time     = _getTimeAgo(_json.date['#text'], _gmt_offset);
+      	}
       } else {
-      	track.time     = _getTimeAgo(_json.date['#text'], _gmt_offset);
+      	track.time = '';
       }
 
       _showCover(i, track);
@@ -149,7 +181,11 @@ var lastFmRecords = (function() {
   	});
   	
     // always set title of image
-    jQuery('#lastfmcover' + _id).attr('title', _track.name + ' by ' + _track.artistname + ' (' + _track.time + ')');
+    var _title = _track.name + ' by ' + _track.artistname;
+    if ('' != _track.time) {
+    	_title += ' (' + _track.time + ')';
+    }
+    jQuery('#lastfmcover' + _id).attr('title', _title);
     if ('' == _track.cdcover) {
 			// no cover for cd, do we have an image for the artist?
 			if (_imgs_found[_track.artistmbid] && ('*' != _imgs_found[_track.artistmbid])) {
@@ -200,6 +236,7 @@ var lastFmRecords = (function() {
     });
   };
 
+  // this code is just too complex, I know. Suggestions?
   function _getTimeAgo(_t, gmt_offset) {
     // difference between then and now
     var _diff = new Date() - new Date(_t);
@@ -207,7 +244,7 @@ var lastFmRecords = (function() {
     _diff = _diff - (gmt_offset * 60000 * 60);
 
     var _d = [];
-    // how may years in the difference? not many, I hope ;-)
+    // how many years in the difference? not many, I hope ;-)
     _d.ye = parseInt(_diff / (1000 * 60 * 60 * 24 * 365));
     _d.da = parseInt(_diff / (1000 * 60 * 60 * 24)) - (_d.ye * 365);
     _d.ho = parseInt(_diff / (1000 * 60 * 60)) - (_d.ye * 365 * 24) - (_d.da * 24);
@@ -244,7 +281,7 @@ var lastFmRecords = (function() {
 
     setPeriod: function(orPeriod) {
       // TODO: just todo ;-)
-      _period = 'recenttracks';
+      _period = orPeriod;
     },
 
     setCount: function(orCount) {
@@ -298,16 +335,22 @@ var lastFmRecords = (function() {
         return false;
       }
 
-			if (_settings.username)     { this.setUser(_settings.username) };
+			if (_settings.username)     { this.setUser(_settings.username) }
+			if (_settings.period)       { this.setPeriod(_settings.period); }
 			if (_settings.defaultthumb) { this.setDefaultThumb(_settings.defaultthumb); }
 			if (_settings.count)        { this.setCount(_settings.count); }
 			if (_settings.refresh)      { this.setRefreshMinutes(_settings.refresh); }
 			if (_settings.offset)       { this.setTimeOffset(_settings.offset); }
 			if (_settings.styletype)    { this.setStyle(_settings.styletype); }
 
+			// no need to refresh when period isn't Recent tracks
+			if ('recenttracks' != _period) {
+				_refreshmin = 0;
+			}
+
       // add an ul to placeholder div
-      var _ul = jQuery("<ul></ul>").appendTo("div#" + _placeholder);
-      if (!_ul) {
+      var _ol = jQuery("<ol></ol>").appendTo("div#" + _placeholder);
+      if (!_ol) {
         _logStatus('error: placeholder for cd covers not found');
       }
 
@@ -329,11 +372,10 @@ var lastFmRecords = (function() {
 
         _img = jQuery('<img></img>').attr('src', _defaultthumb).attr('id', 'lastfmcover' + i).appendTo(_a);
 
-        _li.appendTo(_ul);
+        _li.appendTo(_ol);
       }
 
-			_logStatus('retreiving last.fm data, will refresh every ' + _refreshmin + ' minute' + _getPluralS(_refreshmin) + '.');
-      _getLastFMData();
+			_getLastFMData();
     },
 
     refreshCovers: function() {

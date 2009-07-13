@@ -3,7 +3,7 @@
 Plugin Name: Last.Fm Records
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
-Version: 1.5.1
+Version: 1.5.2
 Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Author URI: http://jeroensmeets.net/
 License:  GPL
@@ -40,6 +40,7 @@ function lfr_add_javascript() {
                     placeholder: '<?php echo $options['placeholder']; ?>',
                     defaultthumb: '<?php echo $options['defaultthumb']; ?>',
                     count: <?php echo $options['count']; ?>,
+                    period: '<?php echo $options['period']; ?>',
                     refresh: <?php echo $options['refresh']; ?>,
                     offset: <?php echo $options['offset']; ?>
                   };
@@ -47,6 +48,7 @@ function lfr_add_javascript() {
 <?php
 		if (true == $options['debug']) { echo "      lastFmRecords.debug();"; }
 ?>
+
       lastFmRecords.init(_config);
     });
   </script>
@@ -58,7 +60,7 @@ function lfr_add_javascript() {
     #lastfmrecords        { padding: 0px; padding-bottom: 10px; }
 
     /* thx to http://cssglobe.com/lab/overflow_thumbs/ */
-    #lastfmrecords ul,
+    #lastfmrecords ol,
       #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
     #lastfmrecords li          { float: left; margin: 0px 5px 5px 0px; }
     #lastfmrecords a           { display: block; float: left; width: 100px; height: 100px; line-height: 100px; overflow: hidden; position: relative; z-index: 1; }
@@ -119,6 +121,7 @@ function lfr_options() {
 		// title is handled by widget settings
 		# $options['title']        = strip_tags(stripslashes($_POST['lastfm-title']));
 		$options['username']       = strip_tags(stripslashes($_POST['lastfm-username']));
+		$options['period']         = strip_tags(stripslashes($_POST['lastfm-period']));
 		$options['placeholder']    = strip_tags(stripslashes($_POST['lastfm-placeholder']));
 		$options['defaultthumb']   = strip_tags(stripslashes($_POST['lastfm-defaultthumb']));
 		$options['stylesheet']     = strip_tags(stripslashes($_POST['lastfm-stylesheet']));
@@ -131,7 +134,10 @@ function lfr_options() {
 		  $options['count'] = 6;
 		}
 		$options['refresh']        = intval($_POST['lastfm-refresh']);
-		$options['offset']         = intval($_POST['lastfm-offset']);
+		$options['offset']         = strip_tags(stripslashes($_POST['lastfm-offset']));
+		if (('+' != substr($options['offset'], 0, 1)) && ('-' != substr($options['offset'], 0, 1))) {
+			$options['offset'] = '+0';
+		}
 		$options['debug']          = strip_tags(stripslashes($_POST['lastfm-debug']));
 		
 		update_option('lastfm-records', $options);
@@ -146,16 +152,31 @@ function lfr_options() {
 					<td><input type="text" name="lastfm-username" value="<?php echo $options['username']; ?>" /></td>
 				</tr>
 				<tr valign="top">
+					<th scope="row"><label for="lastfm-stylesheet">Period:</label></th>
+					<td>
+						<select id="lastfm-period" name="lastfm-period">
+							<option value="recenttracks"<?php if ('recenttracks' == $options['period']) { echo ' selected'; } ?>>Recent tracks</option>
+							<option value="7day"<?php if ('7day' == $options['period']) { echo ' selected'; } ?>>Last 7 days</option>
+							<option value="3month"<?php if ('3month' == $options['period']) { echo ' selected'; } ?>>Last 3 months</option>
+							<option value="6month"<?php if ('6month' == $options['period']) { echo ' selected'; } ?>>Last 6 months</option>
+							<option value="12month"<?php if ('12month' == $options['period']) { echo ' selected'; } ?>>Last year</option>
+							<option value="overall"<?php if ('overall' == $options['period']) { echo ' selected'; } ?>>Everything but the girl</option>
+							<option value="topalbums"<?php if ('topalbums' == $options['period']) { echo ' selected'; } ?>>Top albums</option>
+							<option value="lovedtracks"<?php if ('lovedtracks' == $options['period']) { echo ' selected'; } ?>>Loved tracks</option>
+						</select>
+					</td>
+				</tr>
+				<tr valign="top">
 					<th scope="row"><label for="lastfm-count">Count:</label></th>
 					<td><input type="text" name="lastfm-count" value="<?php echo $options['count']; ?>" /></td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="lastfm-refresh">Refresh time (in minutes):</label></th>
-					<td><input type="text" name="lastfm-refresh" value="<?php echo $options['refresh']; ?>" /></td>
+					<td><input type="text" name="lastfm-refresh" value="<?php echo $options['refresh']; ?>" /><br />Only used when period is 'Recent tracks'</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="lastfm-offset">Off-set (from GMT +0):</label></th>
-					<td><input type="text" name="lastfm-offset" value="<?php echo $options['offset']; ?>" /></td>
+					<td><input type="text" name="lastfm-offset" value="<?php echo $options['offset']; ?>" /><br />Use +x or -x (for example +1 or -7)</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="lastfm-placeholder">Placeholder:</label></th>
