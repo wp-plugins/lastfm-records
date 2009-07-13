@@ -41,11 +41,14 @@ An example:
   var _config = {
     username: 'YOURUSERNAME', // last.fm username
     count: 10,                // number of images to show
+    period: '3month',         // period to get last.fm data from
     refresh: 1,               // when to get new data from last.fm (in minutes)
     offset: 1                 // difference between your timezone and GMT.
   };
  lastFmRecords.init(_config);
 </script>
+
+The period option can be set to `recenttracks`, `7day`, `3month`, `6month`, `12month`, `overall`, `topalbums` and `lovedtracks`.
 
 You also need some styling to get things nice and shiny:
 
