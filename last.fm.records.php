@@ -3,7 +3,7 @@
 Plugin Name: Last.Fm Records
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
-Version: 1.5.2
+Version: 1.5.3
 Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Author URI: http://jeroensmeets.net/
 License:  GPL
@@ -63,11 +63,11 @@ function lfr_add_javascript() {
     #lastfmrecords ol,
       #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
     #lastfmrecords li          { float: left; margin: 0px 5px 5px 0px; }
-    #lastfmrecords a           { display: block; float: left; width: 100px; height: 100px; line-height: 100px; overflow: hidden; position: relative; z-index: 1; }
-    #lastfmrecords a img       { float: left; position: absolute; margin: auto; min-height: 100px; }
+    #lastfmrecords a           { display: block; float: left; width: <?php echo $options['imgwidth']; ?>px; height: <?php echo $options['imgwidth']; ?>px; line-height: <?php echo $options['imgwidth']; ?>px; overflow: hidden; position: relative; z-index: 1; }
+    #lastfmrecords a img       { float: left; position: absolute; margin: auto; min-height: <?php echo $options['imgwidth']; ?>px; }
     /* mouse over */
     #lastfmrecords a:hover     { overflow:visible; z-index:1000; border:none; }
-    #lastfmrecords a:hover img { border: 1px  solid #999; background: #fff; padding: 3px; margin-top: -20px; margin-left: -20px; min-height: 120px;  }
+    #lastfmrecords a:hover img { border: 1px  solid #999; background: #fff; padding: 3px; margin-top: -20px; margin-left: -20px; min-height: <?php echo $options['imgwidth'] + 20; ?>px;  }
   </style>
 
 <?php

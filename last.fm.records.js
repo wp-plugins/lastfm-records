@@ -32,6 +32,9 @@ var lastFmRecords = (function() {
 	var _LASTFM_APIKEY = 'fbfa856cc3af93c43359b57921b1e64e';
 	var _LASTFM_WS_URL = 'http://ws.audioscrobbler.com/2.0/';
 
+	// last.fm added a default album image, and I don't like it
+	var _LASTFM_DEFAULTIMG = 'http://cdn.last.fm/flatness/catalogue/noimage/2/default_album_medium.png';
+
   function _logStatus(text) {
     if (_debug)
       if ('undefined' != typeof console)
@@ -117,7 +120,8 @@ var lastFmRecords = (function() {
      		_biggestYet = _img['#text'];
      	}
     });
-		return _biggestYet;    
+
+		return (_LASTFM_DEFAULTIMG == _biggestYet) ? false : _biggestYet;
 	}
 
   function _processLastFmData(data) {
