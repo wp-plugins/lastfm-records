@@ -3,7 +3,7 @@
 Plugin Name: Last.Fm Records
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
-Version: 1.5.3
+Version: 1.5.4
 Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Author URI: http://jeroensmeets.net/
 License:  GPL
@@ -30,32 +30,19 @@ function lfr_add_javascript() {
 	$options = get_option('lastfm-records');
 	if ('' == trim($options['username'])) {
 ?>
-	<!-- ### Attention! last.fm username is not set in the settings for the plugin Last.Fm Records -->
+
+  <!-- ### Attention! last.fm username is not set in the settings for the plugin Last.Fm Records -->
+
 <?php
 	} else {
 ?>
-  <script type='text/javascript' src='<?php echo LFR_URL; ?>/last.fm.records.js'></script>
-  <script type='text/javascript'>
-    var _config = { username: '<?php echo $options['username']; ?>',
-                    placeholder: '<?php echo $options['placeholder']; ?>',
-                    defaultthumb: '<?php echo $options['defaultthumb']; ?>',
-                    count: <?php echo $options['count']; ?>,
-                    period: '<?php echo $options['period']; ?>',
-                    refresh: <?php echo $options['refresh']; ?>,
-                    offset: <?php echo $options['offset']; ?>
-                  };
-    jQuery(document).ready( function() {
-<?php
-		if (true == $options['debug']) { echo "      lastFmRecords.debug();"; }
-?>
 
-      lastFmRecords.init(_config);
-    });
-  </script>
+  <!-- Last.Fm Records start -->
 <?php
-		if (true == $options['stylesheet']) {
+		// display stylesheet? version 1.5.3 had 0 or 1, so we build from there
+		switch($options['stylesheet']) {
+			case 1:
 ?>
-  <!-- added by plugin Last.Fm Records -->
   <style type="text/css">
     #lastfmrecords        { padding: 0px; padding-bottom: 10px; }
 
@@ -69,13 +56,48 @@ function lfr_add_javascript() {
     #lastfmrecords a:hover     { overflow:visible; z-index:1000; border:none; }
     #lastfmrecords a:hover img { border: 1px  solid #999; background: #fff; padding: 3px; margin-top: -20px; margin-left: -20px; min-height: <?php echo $options['imgwidth'] + 20; ?>px;  }
   </style>
+<?php
+			break;
+			case 2:
+?>
+  <style type="text/css">
+    #lastfmrecords             { padding: 0px; padding-bottom: 10px; }
+    #lastfmrecords ol,
+      #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
+    #lastfmrecords li          { display: inline; margin: 0px 5px 5px 0px; }
+    #lastfmrecords a img       { width: <?php echo $options['imgwidth']; ?>px; height: <?php echo $options['imgwidth']; ?>px; }
+  </style>
+<?php
+			break;
+			case 3:
+			break;
+		}
+
+?>
+  <script type='text/javascript' src='<?php echo LFR_URL; ?>/last.fm.records.js'></script>
+  <script type='text/javascript'>
+    var _config = { username: '<?php echo $options['username']; ?>',
+                    placeholder: 'lastfmrecords',
+                    defaultthumb: '<?php echo $options['defaultthumb']; ?>',
+                    count: <?php echo $options['count']; ?>,
+                    period: '<?php echo $options['period']; ?>',
+                    refresh: <?php echo $options['refresh']; ?>,
+                    offset: <?php echo $options['offset'] . "\n"; ?>
+                  };
+    jQuery(document).ready( function() {
+<?php
+		if (true == $options['debug']) { echo "      lastFmRecords.debug();\n"; }
+?>
+      lastFmRecords.init(_config);
+    });
+  </script>
+  <!-- Last.Fm Records end -->
 
 <?php
-		}
 	}
 }
 
-# add stylesheet(s) to head
+# add stylesheet and scripts to head
 add_action('wp_head', 'lfr_add_javascript');
 
 	////////////////////////////
@@ -96,7 +118,6 @@ function lfr_options() {
 	if (!is_array($options) ) {
 		$options = array('title'        => 'last.fm records',
 										 'username'     => '',
-										 'placeholder'  => 'lastfmrecords',
 										 'defaultthumb' => 'http://cdn.last.fm/depth/catalogue/noimage/cover_85px.gif',
 										 'stylesheet'   => '0',
 										 'imgwidth'     => 85,
@@ -107,22 +128,17 @@ function lfr_options() {
 										);
 	}
 
-	// for those that had the old plugin
-	if ('' == trim($options['placeholder']))  {
-		$options['placeholder'] = 'lastfmrecords';
-	}
 	if ('' == trim($options['defaultthumb'])) {
 		$options['defaultthumb'] = 'http://cdn.last.fm/depth/catalogue/noimage/cover_85px.gif';
 	}
 
-	// title, username, placeholder, defaultthumb, stylesheet, count, refresh, offset, debug
+	// title, username, defaultthumb, stylesheet, count, refresh, offset, debug
 
 	if (array_key_exists('lastfm-submit', $_POST)) {
 		// title is handled by widget settings
 		# $options['title']        = strip_tags(stripslashes($_POST['lastfm-title']));
 		$options['username']       = strip_tags(stripslashes($_POST['lastfm-username']));
 		$options['period']         = strip_tags(stripslashes($_POST['lastfm-period']));
-		$options['placeholder']    = strip_tags(stripslashes($_POST['lastfm-placeholder']));
 		$options['defaultthumb']   = strip_tags(stripslashes($_POST['lastfm-defaultthumb']));
 		$options['stylesheet']     = strip_tags(stripslashes($_POST['lastfm-stylesheet']));
 		$options['imgwidth']       = intval($_POST['lastfm-imgwidth']);
@@ -179,10 +195,6 @@ function lfr_options() {
 					<td><input type="text" name="lastfm-offset" value="<?php echo $options['offset']; ?>" /><br />Use +x or -x (for example +1 or -7)</td>
 				</tr>
 				<tr valign="top">
-					<th scope="row"><label for="lastfm-placeholder">Placeholder:</label></th>
-					<td><input type="text" name="lastfm-placeholder" value="<?php echo $options['placeholder']; ?>" /></td>
-				</tr>
-				<tr valign="top">
 					<th scope="row"><label for="lastfm-defaultthumb">Default thumb:</label></th>
 					<td>
 						<input type="text" name="lastfm-defaultthumb" value="<?php echo $options['defaultthumb']; ?>" />
@@ -199,8 +211,9 @@ function lfr_options() {
 					<th scope="row"><label for="lastfm-stylesheet">Add stylesheet:</label></th>
 					<td>
 						<select id="lastfm-stylesheet" name="lastfm-stylesheet">
-							<option value="0"<?php if ('0' == $options['stylesheet']) { echo ' selected'; } ?>>No</option>
-							<option value="1"<?php if ('1' == $options['stylesheet']) { echo ' selected'; } ?>>Yes</option>
+							<option value="0"<?php if ('0' == $options['stylesheet']) { echo ' selected'; } ?>>None</option>
+							<option value="2"<?php if ('2' == $options['stylesheet']) { echo ' selected'; } ?>>Plain and simple</option>
+							<option value="1"<?php if ('1' == $options['stylesheet']) { echo ' selected'; } ?>>Fancy hovering effect</option>
 						</select>
 					</td>
 				</tr>
@@ -208,16 +221,18 @@ function lfr_options() {
 					<th scope="row"><label for="lastfm-imgwidth">Thumbnail width:</label></th>
 					<td>
 						<input type="text" name="lastfm-imgwidth" value="<?php echo $options['imgwidth']; ?>" />
-						<br />Only used when Stylesheet is set to Yes.
+						<br />Only used when a stylesheet is selected (see previous setting).
 					</td>
 				</tr>
 				<tr valign="top">
-					<th scope="row"><label for="lastfm-debug">Write debug info to the console:</label></th>
+					<th scope="row"><label for="lastfm-debug">Write debug info:</label></th>
 					<td>
 						<select id="lastfm-debug" name="lastfm-debug">
 							<option value="0"<?php if ('0' == $options['debug']) { echo ' selected'; } ?>>No</option>
 							<option value="1"<?php if ('1' == $options['debug']) { echo ' selected'; } ?>>Yes</option>
 						</select>
+						<br />If your browser supports it, you can view debug info in the javascript console.
+						<br />'Normal' visitors of your site will not see this. For a slightly better performance, keep this set to 'No'.
 					</td>
 				</tr>
 				<tr valign="top">
@@ -237,41 +252,39 @@ add_action('admin_menu', 'lfr_add_pages');
 	// MAKE IT A WIDGET //
 	//////////////////////
 
-# output for sidebar
-function lfr_show_widget($args) {
-	extract($args);
 
-	$options = get_option('lastfm-records');
+class LastFmRecordsWidget extends WP_Widget {
 
-	echo "\n\n" . $before_widget . $before_title . $options['title'] . $after_title . "\n";
-	echo "<div id='" . $options['placeholder'] . "'></div>\n";
-	echo $after_widget . "\n\n";
-}
-
-function lfr_widget_options() {
-	$options = get_option('lastfm-records');
-
-	if (($_POST['lastfmrecords-submit']) && ("" != $_POST['lastfmrecords-title'])) {
-		$options['title'] = strip_tags(stripslashes($_POST['lastfmrecords-title']));
-		update_option('lastfm-records', $options);
+	function LastFmRecordsWidget() {
+		parent::WP_Widget(false, $name = 'LastFmRecords');	
 	}
-	$title = htmlspecialchars($options['title'], ENT_QUOTES);
-?>
-    <p style="text-align:right;">
-      <label for="lastfmrecords-title">title: 
-        <input style="width: 200px;" id="lastfmrecords-title" name="lastfmrecords-title" type="text" value="<?php echo $title ?>" />
-      </label>
-    </p>
-    <p>Other options are on the <a href="<?php echo get_option( 'siteurl' ); ?>/wp-admin/options-general.php?page=<?php echo strtolower(basename(__FILE__)); ?>">options page</a> for this plugin.</p>
-    <input type="hidden" id="lastfmrecords-submit" name="lastfmrecords-submit" value="1" />    
-<?php
-}
 
-# does this wordpress environment support widgets?
-if (function_exists('register_sidebar_widget')) {
-  register_sidebar_widget('Last.Fm Records', 'lfr_show_widget');
-  // and we need a small form to add a title in the sidebar
-  register_widget_control('Last.Fm Records', 'lfr_widget_options', 375, 95);
-}
+	function widget($args, $instance) {		
+		extract($args);
+		$options = get_option('lastfm-records');
+
+		echo "\n\n" . $before_widget . $before_title . $instance['title'] . $after_title . "\n";
+		echo "<div id='lastfmrecords'></div>\n";
+		echo $after_widget . "\n\n";
+	}
+
+	function update($new_instance, $old_instance) {				
+		return $new_instance;
+	}
+
+	function form($instance) {				
+		$title = esc_attr($instance['title']);
+?>
+            <p>
+              <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?>
+                <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
+              </label>
+            </p>
+<?php 
+  }
+} // class LastFmRecordsWidget
+
+// register LastFmRecords widget
+add_action('widgets_init', create_function('', 'return register_widget("LastFmRecordsWidget");'));
 
 ?>

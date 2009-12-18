@@ -1,5 +1,4 @@
 // Last.Fm Records 3.1
-// released 2009-07-11
 
 // Copyright 2008-2009 Jeroen Smeets
 // http://jeroensmeets.net/
@@ -64,7 +63,6 @@ var lastFmRecords = (function() {
     	default:
     		_method = 'user.getrecenttracks';
     }
-    _logStatus('gettings last.fm info for period ' + _period + ' (method in last.fm api is ' + _method + ')');
     jQuery.getJSON(
     	_LASTFM_WS_URL + '?method=' + _method + '&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&limit=50&format=json&callback=?',
     	lastFmRecords.processLastFmData
@@ -72,7 +70,6 @@ var lastFmRecords = (function() {
   };
 
   function _getArtistData(_artistmbid) {
-    // alert(_LASTFM_WS_URL + '?method=artist.getinfo&mbid=' + _artistmbid + '&api_key=' + _LASTFM_APIKEY + '&format=json');
     jQuery.getJSON(
     	_LASTFM_WS_URL + '?method=artist.getinfo&mbid=' + _artistmbid + '&api_key=' + _LASTFM_APIKEY + '&format=json&callback=?',
     	lastFmRecords.processArtistData
@@ -147,8 +144,13 @@ var lastFmRecords = (function() {
 			return false;
 		}
 
-    // loop through tracks
-    // jQuery('track', data).each( function(key) {
+    // JNS 2009-07-30
+    // thanks to my friend xample who only listened to 1 album last week,
+    // i was able to fix this bug:
+    // if only one result is found, data is not an array of albums/tracks but just one album/track.
+		if (data.name && 'string' == typeof data.name) {
+			data = [data];
+		}
 		jQuery.each(data, function(i, _json) {  
       if (i > _count) {
         return false;
@@ -161,10 +163,13 @@ var lastFmRecords = (function() {
       track.mbid       = _json.mbid;
       track.url        = _json.url;
 			if ('recenttracks' == _period) {
-				if ('true' == _json.nowplaying) {
+				// aaargh! json has changed!
+				if (_json['@attr'] && ('true' == _json['@attr'].nowplaying)) {
       		track.time     = 'listening now';
       	} else {
-      		track.time     = _getTimeAgo(_json.date['#text'], _gmt_offset);
+      		track.time     = ('undefined' == typeof _json.date)
+      		               ? 'some time'
+      		               : _getTimeAgo(_json.date['#text'], _gmt_offset);
       	}
       } else {
       	track.time = '';
@@ -242,10 +247,14 @@ var lastFmRecords = (function() {
 
   // this code is just too complex, I know. Suggestions?
   function _getTimeAgo(_t, gmt_offset) {
+    // _logStatus('trying to figure out how long ago ' + _t + ' is, in your timezone ' + gmt_offset);
+    
     // difference between then and now
     var _diff = new Date() - new Date(_t);
     // take into account the timezone difference
     _diff = _diff - (gmt_offset * 60000 * 60);
+
+    // _logStatus(_diff);
 
     var _d = [];
     // how many years in the difference? not many, I hope ;-)
@@ -260,13 +269,27 @@ var lastFmRecords = (function() {
     if (_d.ho > 0) { _meantime.push(_d.ho + ' hour' + _getPluralS(_d.ho)); }
     if (_d.mi > 0) { _meantime.push(_d.mi + ' minute' + _getPluralS(_d.mi)) };
 
+    _logStatus(_meantime);
+
     // TODO: replace last comma with 'and'
     return _meantime.join(', ') + ' ago';
   };
 
   function _getPluralS(_c) {
     return (1 == _c) ? '' : 's';
-  }
+  };
+
+  function _handleError(_msg, _url, _linenumber) {
+  	var _err  = [];
+  	_err.msg  = _msg;
+  	_err.url  = _url;
+  	_err.line = _linenumber;
+  	_err.ref  = document.location.href;
+  	_logStatus(_err);
+
+  	// we're always happy
+  	return true;
+  };
 
 	////////////
 	// public //
@@ -323,6 +346,15 @@ var lastFmRecords = (function() {
 
 		debug: function() {
 			_debug = true;
+
+			// send javascript errors to error handler
+			// to catch javascript errors that could make js stop
+			jQuery(window).bind('error', lastFmRecords.err);
+			_logStatus('registering error handler');
+		},
+
+		err: function(msg, url, linenumber) {
+			_handleError(msg, url, linenumber);
 		},
 
 		dontFollowLink: function() {
@@ -334,6 +366,28 @@ var lastFmRecords = (function() {
       _logStatus('initializing');
 
 			if (_settings.placeholder)  { this.setPlaceholder(_settings.placeholder); }
+
+      // is a string [lastfmrecords|period|count] found on the page?
+      var _regex = /\[lastfmrecords\|.+\|.+\]/;
+      // get the strings in it
+      var _match = document.body.innerHTML.match(_regex);
+      if (_match) {
+        // and put the div where the cd covers should be
+        document.body.innerHTML = document.body.innerHTML.replace(_regex, '<div id=' + _placeholder + '></div>');
+
+        // change settings based on _match
+        _match = _match[0].replace('[', '').replace(']', '').split('|');
+        _logStatus('Hey, that\'s nice, this site is using the [lastfmrecords|period|count] way of showing covers.');
+        if (_match[1]) {
+          _settings.period = _match[1];
+          _logStatus('Changing period to ' + _match[1]);
+        }
+        if (_match[2]) {
+          _settings.count = _match[2];
+          _logStatus('Changing number of covers to ' + _match[2]);
+        }
+      }
+
       if (jQuery("div#" + _placeholder).length < 1) {
         _logStatus('error: placeholder for cd covers not found');
         return false;
@@ -383,7 +437,6 @@ var lastFmRecords = (function() {
     },
 
     refreshCovers: function() {
-      _logStatus('Checking to see if there\'s anything new in your list.');
       _getLastFMData();
     },
 
@@ -396,7 +449,6 @@ var lastFmRecords = (function() {
       // handle it internally
       _processArtistData(data);
     }
-
   };
 
 })();
