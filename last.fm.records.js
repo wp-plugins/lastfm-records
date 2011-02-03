@@ -9,7 +9,7 @@
 // you have to change the API key. For more info, see
 // http://www.last.fm/api/account
 
-var lastFmRecords = (function() {
+var lastFmRecords = (function(window, document, undefined) {
 
   // private, reachable through public setters
   var _user;
@@ -53,20 +53,45 @@ var lastFmRecords = (function() {
         _method = 'user.getlovedtracks';
         break;
       case 'topalbums':
-        _method = 'user.gettopalbums';
+      case 'topalbumsoverall':
+        _method = 'user.gettopalbums&period=overall';
         break;
-      case 'overall':
-      case '7day':
-      case '3month':
-      case '6month':
-      case '12month':
-        _method = 'user.gettopalbums&period=' + _period;
+      case 'topalbums7day':
+        _method = 'user.gettopalbums&period=7day';
+        break;
+      case 'topalbums3month':
+        _method = 'user.gettopalbums&period=3month';
+        break;
+      case 'topalbums6month':
+        _method = 'user.gettopalbums&period=6month';
+        break;
+      case 'topalbums12month':
+        _method = 'user.gettopalbums&period=12month';
+        break;
+      case 'toptracks':
+        _method = 'user.gettoptracks';
+        break;
+      case 'tracksoverall':
+        _method = 'user.gettoptracks&period=overall';
+        break;
+      case 'tracks7day':
+        _method = 'user.gettoptracks&period=7day';
+        break;
+      case 'tracks3month':
+        _method = 'user.gettoptracks&period=3month';
+        break;
+      case 'tracks6month':
+        _method = 'user.gettoptracks&period=6month';
+        break;
+      case 'tracks12month':
+        _method = 'user.gettoptracks&period=12month';
         break;
       default:
         _method = 'user.getrecenttracks';
     }
+    // console.log(_LASTFM_WS_URL + '?method=' + _method + '&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&limit=50&format=json');
     jQuery.getJSON(
-      _LASTFM_WS_URL + '?method=' + _method + '&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&limit=50&format=json&callback=?',
+      _LASTFM_WS_URL + '?method=' + _method + '&user=' + _user + '&api_key=' + _LASTFM_APIKEY + '&format=json&callback=?',
       lastFmRecords.processLastFmData
     );
   };
@@ -137,6 +162,9 @@ var lastFmRecords = (function() {
         break;
       case 'lovedtracks':
         data = data.lovedtracks.track;
+        break;
+      case 'tracks3month':
+        data = data.toptracks.track;
         break;
       default:
         data = data.topalbums.album;
@@ -486,4 +514,4 @@ var lastFmRecords = (function() {
     }
   };
 
-})();
+})(this, document);

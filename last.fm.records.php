@@ -5,7 +5,7 @@ Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.6
+Version: 1.6.1
 License:  GPL2
 */
 
@@ -176,7 +176,6 @@ class LastfmRecords {
     $options = get_option('lastfm-records');
 ?>
         <div class="wrap">
-          <?php LastfmRecords::show_donate_button(); ?>
           <?php screen_icon("options-general"); ?>
           <h2>Last.fm Records</h2>
           <form action="options.php" method="post">
@@ -186,6 +185,7 @@ class LastfmRecords {
               <input name="Submit" type="submit" class="button-primary" value="<?php esc_attr_e('Save Changes'); ?>" />
             </p>
           </form>
+          <?php LastfmRecords::show_donate_button(); ?>
         </div> 
 <?php 
   }
@@ -231,14 +231,22 @@ class LastfmRecords {
   function setting_period() {
 	$options = get_option('lastfm-records');
 	$items = array(
+
 	  array('recenttracks', 'Recent tracks'),
-	  array('7day', 'Last 7 days'),
-	  array('3month', 'Last 3 months'),
-	  array('6month', 'Last 6 months'),
-	  array('12month', 'Last 12 months'),
-	  array('overall', 'Everything but the girl'),
-	  array('topalbums', 'Top albums'),
-	  array('lovedtracks', 'Loved tracks')
+
+	  array('lovedtracks', 'Loved tracks'),
+
+	  array('tracks7day', 'Tracks -- last 7 days'),
+	  array('tracks3month', 'Tracks -- last 3 months'),
+	  array('tracks6month', 'Tracks -- last 6 months'),
+	  array('tracks12month', 'Tracks -- last 12 months'),
+	  array('tracksoverall', 'Tracks -- all time'),
+
+	  array('topalbums7day', 'Albums -- last 7 days'),
+	  array('topalbums3month', 'Albums -- last 3 months'),
+	  array('topalbums6month', 'Albums -- last 6 months'),
+	  array('topalbums12month', 'Albums -- last 12 months'),
+	  array('topalbumsoverall', 'Top albums -- all time')
 	);
 	echo "<select id='plugin_period' name='lastfm-records[period]'>\n";
 	foreach($items as $item) {
