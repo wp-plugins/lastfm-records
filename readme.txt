@@ -1,12 +1,12 @@
 === Last.Fm Records ===
-Contributors: hondjevandirkie
+Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.0.3
-Stable tag: 1.6
+Tested up to: 3.1
+Stable tag: 1.6.2
 
-This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget to you sidebar.
+This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
 == Description ==
 
@@ -20,14 +20,23 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 
 To determine where the cd covers are displayed, use one of the following:
 4a. If you want to show the cd covers in your sidebar, go to the widgets settings and enable the widget. Here you can add a title for the widget.
-4b. you can use [lastfmrecords|period|count] (for example [lastfmrecords|overall|4]) in your page/blogpost. It will be replaced by a list of covers with the same HTML as the widget one, so you can add the stylesheet in the settings. The period option can be set to `recenttracks`, `7day`, `3month`, `6month`, `12month`, `overall`, `topalbums` and `lovedtracks`.
+4b. you can use [lastfmrecords|period|count] (for example [lastfmrecords|overall|4]) in your page/blogpost. It will be replaced by a list of covers with the same HTML as the widget one, so you can add the stylesheet in the settings. The period option can be set to `recenttracks`, `lovedtracks`, `tracks7day`, `tracks3month`, `tracks6month`, `tracks12month`, `tracksoverall`, `topalbums7day`, `topalbums3month`, `topalbums6month`, `topalbums12month` and `topalbumsoverall`
 
 == Upgrade Notice ==
 
-= 1.6 =
-Wow, this version has been a long time coming, 1.5.4 was released one year ago. The plugin is now more robust, and includes jQuery if your theme doesn't. If other scripts on your page generate an error, this plugin catches the error, so it can continue to show covers.
+= 1.6.2 =
+bugfix for periods `tracks7day`, `tracks6month`, `tracks12month` and `tracksoverall`
+
+
+= 1.6.1 =
+last.fm added a new check, fixed it in the javascript. Error only occured if you use the period 'recent tracks'.
 
 == Changelog ==
+
+= 1.6.1 =
+* last.fm added a new check, fixed it in the javascript
+* moved donation notification below settings
+* revised list of periods (see Options)
 
 = 1.6 =
 * plugin code adds jQuery dynamically when not included in theme
