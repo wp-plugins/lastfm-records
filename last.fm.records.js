@@ -163,7 +163,11 @@ var lastFmRecords = (function(window, document, undefined) {
       case 'lovedtracks':
         data = data.lovedtracks.track;
         break;
+      case 'tracks7day':
       case 'tracks3month':
+      case 'tracks6month':
+      case 'tracks12month':
+      case 'tracksoverall':
         data = data.toptracks.track;
         break;
       default:

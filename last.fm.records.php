@@ -5,7 +5,7 @@ Plugin URI: http://jeroensmeets.net/lastfmrecords/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.6.1
+Version: 1.6.2
 License:  GPL2
 */
 
@@ -25,6 +25,7 @@ add_action('init', 'lfr_add_javascript');
 
 function lfr_add_stylesheet() {
 	$options = get_option('lastfm-records');
+	$_stylesheet = (!$options['stylesheet']) ? 2 : $options['stylesheet'];
 
 ?>
   <script type='text/javascript'>
@@ -35,7 +36,7 @@ function lfr_add_stylesheet() {
 <?php
 
 	// display stylesheet? version 1.5.3 had 0 or 1, so we build from there
-	switch($options['stylesheet']) {
+	switch($_stylesheet) {
 		case 1:
 ?>
   <style type="text/css">
@@ -258,6 +259,8 @@ class LastfmRecords {
 
   function setting_stylesheet() {
 	$options = get_option('lastfm-records');
+	$_stylesheet = (!$options['stylesheet']) ? 2 : $options['stylesheet'];
+
 	$items = array(
 	  array('0', 'None'),
 	  array('2', 'Plain and simple'),
@@ -265,11 +268,10 @@ class LastfmRecords {
 	);
 	echo "<select id='plugin_stylesheet' name='lastfm-records[stylesheet]'>\n";
 	foreach($items as $item) {
-		$selected = ($options['stylesheet'] == $item[0]) ? 'selected="selected"' : '';
+		$selected = ($_stylesheet == $item[0]) ? 'selected="selected"' : '';
 		echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
 	}
-	echo "</select>\n";
-  }
+	echo "</select>\n";  }
 
   function setting_debug() {
 	$options = get_option('lastfm-records');

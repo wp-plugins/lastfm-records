@@ -3,8 +3,8 @@ Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.0.4
-Stable tag: 1.6.1
+Tested up to: 3.1
+Stable tag: 1.6.2
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -23,6 +23,10 @@ To determine where the cd covers are displayed, use one of the following:
 4b. you can use [lastfmrecords|period|count] (for example [lastfmrecords|overall|4]) in your page/blogpost. It will be replaced by a list of covers with the same HTML as the widget one, so you can add the stylesheet in the settings. The period option can be set to `recenttracks`, `lovedtracks`, `tracks7day`, `tracks3month`, `tracks6month`, `tracks12month`, `tracksoverall`, `topalbums7day`, `topalbums3month`, `topalbums6month`, `topalbums12month` and `topalbumsoverall`
 
 == Upgrade Notice ==
+
+= 1.6.2 =
+bugfix for periods `tracks7day`, `tracks6month`, `tracks12month` and `tracksoverall`
+
 
 = 1.6.1 =
 last.fm added a new check, fixed it in the javascript. Error only occured if you use the period 'recent tracks'.
