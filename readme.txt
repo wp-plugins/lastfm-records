@@ -1,10 +1,11 @@
 === Last.Fm Records ===
+License: GPL2
 Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.1
-Stable tag: 1.6.2
+Tested up to: 3.4
+Stable tag: 1.7
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -18,20 +19,30 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Configure under `Settings` >> `Last.Fm Records`
 
-To determine where the cd covers are displayed, use one of the following:
-4a. If you want to show the cd covers in your sidebar, go to the widgets settings and enable the widget. Here you can add a title for the widget.
-4b. you can use [lastfmrecords|period|count] (for example [lastfmrecords|overall|4]) in your page/blogpost. It will be replaced by a list of covers with the same HTML as the widget one, so you can add the stylesheet in the settings. The period option can be set to `recenttracks`, `lovedtracks`, `tracks7day`, `tracks3month`, `tracks6month`, `tracks12month`, `tracksoverall`, `topalbums7day`, `topalbums3month`, `topalbums6month`, `topalbums12month` and `topalbumsoverall`
+4a. (widget) If you want to show the cd covers in your sidebar, go to the widgets settings and enable the widget. Here you can add a title for the widget.
+
+4b. (shortcode) this plugin now has its own shortcode: `[lastfmrecords]`. It uses the global plugin settings, but comes with arguments to overrule them. More info on the arguments on the `Shortcode info` tab.
 
 == Upgrade Notice ==
 
-= 1.6.2 =
-bugfix for periods `tracks7day`, `tracks6month`, `tracks12month` and `tracksoverall`
+= 1.7 =
 
-
-= 1.6.1 =
-last.fm added a new check, fixed it in the javascript. Error only occured if you use the period 'recent tracks'.
+A completely rewritten plugin, tested up to WordPress 3.4. Comes with WordPress shortcodes, and the javascript file is now a jQuery plugin.
 
 == Changelog ==
+
+= 1.7 =
+
+* restructured the code, the javascript now is a jQuery plugin
+* added a WordPress shortcode
+* changed "you have to" into "please" in the last.fm.records.js file
+
+= todo list =
+
+* a slideshow feature is in the works, but not offered yet.
+
+= 1.6.2 =
+* fixed periods `tracks7day`, `tracks6month`, `tracks12month` and `tracksoverall`
 
 = 1.6.1 =
 * last.fm added a new check, fixed it in the javascript
@@ -44,10 +55,6 @@ last.fm added a new check, fixed it in the javascript. Error only occured if you
 * the plugin now uses the timezone you have set in WordPress
 * added option to open links in new screen
 * processed buglist
-
-= todo list =
-
-* make combination of [lastfmrecords|period|count] and widget possible
 
 = 1.5.5 =
 * added a check for the links back to last.fm
@@ -70,10 +77,29 @@ last.fm added a new check, fixed it in the javascript. Error only occured if you
 * can be used on any site without Wordpress (see readme.txt)
 * auto refresh (in minutes) added to settings
 
-== Use it without Wordpress ==
+== Shortcode ==
 
-= Can I use this widget without Wordpress? =
+The `[lastfmrecords]` shortcode gives you the opportunity to show cd covers in your posts. It uses the settings from the plugin, but you can add arguments to overrule them:
 
-Yes you can! It's a two step procedure:
-1. include the javascript file from the zip in your webpage
-2. check [this page on my site](http://jeroensmeets.net/wordpress/lastfmrecords/ "page with more info on configuring the javascript") for more info on configuring and calling the javascript.
+* `period="***"`: can be set to `recenttracks`, `lovedtracks`, `tracks7day`, `tracks3month`, `tracks6month`, `tracks12month`, `tracksoverall`, `topalbums7day`, `topalbums3month`, `topalbums6month`, `topalbums12month` and `topalbumsoverall`
+* `count`: number of covers to show
+* `stylesheet`: `simple` or `hover`
+* `imgwidth`: width (and height) of the cd covers
+* `user`: last.fm username
+* `refreshmin`: time between updates (only works for period `recenttracks`)
+
+== jQuery plugin ==
+
+Starting with version 1.7, the javascript in this plugin is a jQuery plugin. It means you can use it on non-WordPress sites with a little bit of code:
+
+1. include jQuery, and the 'last.fm.records.js' file from this plugin
+2. add `<div id="lastfmrecords_elem"></div>` to your HTML (the id name is yours to choose, of course)
+3. use this piece of jQuery to show covers
+`
+jQuery(document).ready( function() {
+  jQuery("#lastfmrecords_elem").lastFmRecords(
+    {"period": "recentttracks", "user": "lastfmusername", "count": "4"}
+  );
+});
+`
+4. check the shortcode options for all arguments.
