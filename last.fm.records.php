@@ -1,77 +1,93 @@
 <?php
 /*
 Plugin Name: Last.Fm Records
-Plugin URI: http://jeroensmeets.net/lastfmrecords/
+Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.6.2
-License:  GPL2
+Version: 1.7
+License: GPL2
 */
 
 ////////////////////////////////////
 // Enqueue scripts and stylesheet //
 ////////////////////////////////////
 
-function lfr_add_javascript() {
-  wp_enqueue_script('lastfmrecords', plugins_url('/last.fm.records.js', __FILE__), 'jquery');
+function lfr_add_js() {
+
+  if (!is_admin()) {
+    // var_dump(get_required_files());
+    wp_enqueue_script('lastfmrecords', plugins_url('lastfm-records/last.fm.records.js'), array('jquery'), '1.0');
+  }
+}
+
+function lfr_add_js_options() {
   // use wordpress offset
   $options = get_option('lastfm-records');
   $options['offset'] = get_option('gmt_offset');
+
+  // why did I use two different names for the same setting?
+  $options['user'] = $options['username'];
+
+  // display stylesheet? version 1.5.3 had 0 or 1, so we build from there
+  $_stylesheet = false;
+  switch($options['stylesheet']) {
+  	case 1:
+  	  $_stylesheet = 'hover';
+  	  break;
+  	case 2:
+  	  $_stylesheet = 'simple';
+  	  break;
+/*
+  	case 3:
+  	  $_stylesheet = 'slideshow';
+  	  break;
+*/
+  }
+  // the stylesheet itself is added by the javascript
+  $options['stylesheet'] = $_stylesheet;
+
+  unset($options['username']);
   wp_localize_script('lastfmrecords', 'lfr_config', $options);
 }
 
-add_action('init', 'lfr_add_javascript');
+add_action('wp_enqueue_scripts', 'lfr_add_js_options');
+add_action('init', 'lfr_add_js');
 
-function lfr_add_stylesheet() {
-	$options = get_option('lastfm-records');
-	$_stylesheet = (!$options['stylesheet']) ? 2 : $options['stylesheet'];
-
+function lfr_add_widget_settings() {
 ?>
   <script type='text/javascript'>
     jQuery(document).ready( function() {
-      lastFmRecords.init(lfr_config);
+      jQuery('#lastfmrecords').lastFmRecords(lfr_config);
     });
   </script>
 <?php
-
-	// display stylesheet? version 1.5.3 had 0 or 1, so we build from there
-	switch($_stylesheet) {
-		case 1:
-?>
-  <style type="text/css">
-    #lastfmrecords        { padding: 0px; padding-bottom: 10px; }
-
-    /* thx to http://cssglobe.com/lab/overflow_thumbs/ */
-    #lastfmrecords ol,
-      #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
-    #lastfmrecords li          { float: left; margin: 0px 5px 5px 0px; }
-    #lastfmrecords a           { display: block; float: left; width: <?php echo $options['imgwidth']; ?>px; height: <?php echo $options['imgwidth']; ?>px; line-height: <?php echo $options['imgwidth']; ?>px; overflow: hidden; position: relative; z-index: 1; }
-    #lastfmrecords a img       { float: left; position: absolute; margin: auto; min-height: <?php echo $options['imgwidth']; ?>px; }
-    /* mouse over */
-    #lastfmrecords a:hover     { overflow:visible; z-index:1000; border:none; }
-    #lastfmrecords a:hover img { border: 1px  solid #999; background: #fff; padding: 3px; margin-top: -20px; margin-left: -20px; min-height: <?php echo $options['imgwidth'] + 20; ?>px;  }
-  </style>
-<?php
-		break;
-		case 2:
-?>
-  <style type="text/css">
-    #lastfmrecords             { padding: 0px; padding-bottom: 10px; }
-    #lastfmrecords ol,
-      #lastfmrecords li        { margin: 0; padding: 0; list-style: none; }
-    #lastfmrecords li          { display: inline; margin: 0px 5px 5px 0px; }
-    #lastfmrecords a img       { width: <?php echo $options['imgwidth']; ?>px; height: <?php echo $options['imgwidth']; ?>px; }
-  </style>
-<?php
-		break;
-		case 3:
-		break;
-	}
 }
 
-# add stylesheet and scripts to head
-add_action('wp_head', 'lfr_add_stylesheet');
+add_action('wp_head', 'lfr_add_widget_settings');
+
+
+///////////////////
+// Add shortcode //
+///////////////////
+
+// [lastfmrecords period="recenttracks" count="8"]
+function lfr_shortcode($atts) {
+  static $lfr_count = 0;
+  $lfr_count++;
+
+  $_result  = "      <div id='lfr_shortcode" . $lfr_count . "' class='lastfmrecords'></div>\n\n";
+  $_result .= "      <script type='text/javascript'>\n";
+  $_result .= "        jQuery(document).ready( function() {\n";
+  $_result .= "          jQuery('#lfr_shortcode" . $lfr_count . "').lastFmRecords(\n";
+  $_result .= "            " . json_encode($atts) . "\n";
+  $_result .= "          );\n";
+  $_result .= "        });\n";
+  $_result .= "      </script>\n\n";
+
+  return $_result;
+}
+add_shortcode('lastfmrecords', 'lfr_shortcode');
 
 //////////////////////////////////////////////
 // Add link to settings in 'Manage plugins' //
@@ -106,7 +122,7 @@ class LastFmRecordsWidget extends WP_Widget {
 		$options = get_option('lastfm-records');
 
 		echo "\n\n" . $before_widget . $before_title . $instance['title'] . $after_title . "\n";
-		echo "<div id='lastfmrecords'></div>\n";
+		echo "<div id='lastfmrecords' class='lastfmrecords'></div>\n";
 		echo $after_widget . "\n\n";
 	}
 
@@ -186,7 +202,7 @@ class LastfmRecords {
               <input name="Submit" type="submit" class="button-primary" value="<?php esc_attr_e('Save Changes'); ?>" />
             </p>
           </form>
-          <?php LastfmRecords::show_donate_button(); ?>
+          <?php // LastfmRecords::show_donate_button(); ?>
         </div> 
 <?php 
   }
@@ -264,7 +280,8 @@ class LastfmRecords {
 	$items = array(
 	  array('0', 'None'),
 	  array('2', 'Plain and simple'),
-	  array('1', 'Fancy hovering effect')
+	  array('1', 'Fancy hovering effect'),
+	  // array('3', 'Slideshow')
 	);
 	echo "<select id='plugin_stylesheet' name='lastfm-records[stylesheet]'>\n";
 	foreach($items as $item) {
@@ -330,7 +347,7 @@ class LastfmRecords {
       <input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
       <img alt="" border="0" src="https://www.paypal.com/nl_NL/i/scr/pixel.gif" width="1" height="1">
     </form>
-  If you really like this plugin, you can send me some Amazon spending money through Paypal. Or better: design or develop something great for Wordpress! All it takes is an idea.
+  If you really like this plugin, you can send me some Amazon spending money through Paypal. Or better: design or develop something great for WordPress! All it takes is an idea.
   </p>
 </div>
 <?php
