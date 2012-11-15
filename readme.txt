@@ -4,8 +4,8 @@ Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.4
-Stable tag: 1.7
+Tested up to: 3.4.2
+Stable tag: 1.7.2
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -21,15 +21,26 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 
 4a. (widget) If you want to show the cd covers in your sidebar, go to the widgets settings and enable the widget. Here you can add a title for the widget.
 
-4b. (shortcode) this plugin now has its own shortcode: `[lastfmrecords]`. It uses the global plugin settings, but comes with arguments to overrule them. More info on the arguments on the `Shortcode info` tab.
+4b. (shortcode) this plugin now has its own shortcode: `[lastfmrecords]`. It uses the global plugin settings, but comes with arguments to overrule them. More info on the arguments under `Shortcode info`.
 
 == Upgrade Notice ==
 
-= 1.7 =
+= 1.7.2 =
 
-A completely rewritten plugin, tested up to WordPress 3.4. Comes with WordPress shortcodes, and the javascript file is now a jQuery plugin.
+Fixed the stylesheet issue that was fixed in 1.7.1
+
+= 1.7.1 =
+
+Fixed some issues: only load javascript when needed, get last.fm username from settings if not in shortcode. Fixed a stylesheet problem.
 
 == Changelog ==
+
+= 1.7.1 =
+
+* only load javascript when widget or shortcode is found on the page
+* get last.fm username from settings when not specified in shortcode
+* stylesheet fixes (resizing of covers)
+* fixed logging to console (doubt anyone cares but me)
 
 = 1.7 =
 
@@ -77,7 +88,7 @@ A completely rewritten plugin, tested up to WordPress 3.4. Comes with WordPress 
 * can be used on any site without Wordpress (see readme.txt)
 * auto refresh (in minutes) added to settings
 
-== Shortcode ==
+== WordPress Shortcode ==
 
 The `[lastfmrecords]` shortcode gives you the opportunity to show cd covers in your posts. It uses the settings from the plugin, but you can add arguments to overrule them:
 
@@ -87,6 +98,10 @@ The `[lastfmrecords]` shortcode gives you the opportunity to show cd covers in y
 * `imgwidth`: width (and height) of the cd covers
 * `user`: last.fm username
 * `refreshmin`: time between updates (only works for period `recenttracks`)
+
+For example:
+
+`[lastfmrecords user="xample" period="lovedtracks" count="14" stylesheet="hover"]`
 
 == jQuery plugin ==
 
