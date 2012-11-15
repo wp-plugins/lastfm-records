@@ -5,7 +5,7 @@ Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
 Tested up to: 3.4.2
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -24,6 +24,10 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 4b. (shortcode) this plugin now has its own shortcode: `[lastfmrecords]`. It uses the global plugin settings, but comes with arguments to overrule them. More info on the arguments under `Shortcode info`.
 
 == Upgrade Notice ==
+
+= 1.7.2 =
+
+Fixed the stylesheet issue that was fixed in 1.7.1
 
 = 1.7.1 =
 

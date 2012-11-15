@@ -1,5 +1,5 @@
 // released together with Last.Fm Records plugin for WordPress
-// version 1.7.1
+// version 1.7.2
 
 // a plugin for jQuery
 
@@ -476,50 +476,37 @@
 			_elemname = '#' + _elem.attr('id');
 
 			_imgwidth = _settings.imgwidth;
-			_minwidth = parseInt(_imgwidth) + 24;
+			_minwidth = parseInt(_imgwidth) + 48;
 
 			var _css = '';
 			switch (_settings.stylesheet) {
 				case 'simple':
 					_css += _elemname + ' { padding: 0px; padding-bottom: 10px; } ';
-					// thx to http://cssglobe.com/lab/overflow_thumbs/
 					_css += _elemname + ' ol, ' + _elemname + ' li { margin: 0; padding: 0; list-style: none; } ';
 					_css += _elemname + ' li { float: left; margin: 0px 5px 5px 0px; } ';
 					_css += _elemname + ' a { display: block; float: left; width: ' + _imgwidth + 'px;'
 						 + ' height: ' + _imgwidth + 'px; line-height: ' + _imgwidth + 'px;'
 						 + 'overflow: hidden; position: relative; z-index: 1; } ';
 					_css += _elemname + ' a img { float: left; position: absolute; margin: auto;'
-						 + ' min-height: ' + _imgwidth + 'px; } ';
+						 + ' width: ' + _imgwidth + 'px; height: ' + _imgwidth + 'px; } ';
 					break;
 				case 'hover':
 					_css += _elemname + ' { padding: 0px; padding-bottom: 10px; } ';
-					// thx to http://cssglobe.com/lab/overflow_thumbs/
+					// starting point was http://cssglobe.com/lab/overflow_thumbs/
 					_css += _elemname + ' ol, ' + _elemname + ' li { margin: 0; padding: 0; list-style: none; } ';
 					_css += _elemname + ' li { float: left; margin: 0px 5px 5px 0px; } ';
 					_css += _elemname + ' a { display: block; float: left; width: ' + _imgwidth + 'px;'
-						 + ' height: ' + _imgwidth + 'px; line-height: ' + _imgwidth + 'px;'
-						 + 'overflow: hidden; position: relative; z-index: 1; } ';
-					_css += _elemname + ' a img { float: left; position: absolute; margin: auto;'
-						 + ' min-height: ' + _imgwidth + 'px; } ';
+						 + ' height: ' + _imgwidth + 'px; overflow: hidden; position: relative; z-index: 1; } ';
+					_css += _elemname + ' a img { float: left; position: absolute; margin: -24px 24px 24px -24px;'
+					     + ' padding: 3px; border: 1px solid #888; background-color: white;'
+					     + ' width: ' + _minwidth + 'px; height: ' + _minwidth + 'px; max-width: ' + _minwidth + 'px; }';
 
 					// mouse over
-					_css += _elemname + ' a:hover { overflow:visible; z-index:1000; border:none; } ';
-					_css += _elemname + ' a:hover img { border: 1px solid #999; background: #fff; '
-						 + 'padding: 3px; margin-top: -10px; margin-left: -10px; '
-						 + 'min-height: ' + _minwidth + 'px; min-width: ' + _minwidth + 'px; } ';
+					_css += _elemname + ' a:hover { overflow:visible; z-index:1000; } ';
 					break;
 				// TODO implement slideshow
 /*
 				case 'slideshow':
-					_css += _elemname + ' { padding: 0px; padding-bottom: 10px; } ';
-					_css += _elemname + ' ol, ' + _elemname + ' li { margin: 0; padding: 0; list-style: none; } ';
-					_css += _elemname + ' ol li { float: left; margin: 0px 5px 5px 0px; display: none; } ';
-					_css += _elemname + ' ol li:first-child { display: inline; } ';
-					_css += _elemname + ' a { display: block; float: left; width: ' + _imgwidth + 'px;'
-						 + ' height: ' + _imgwidth + 'px; line-height: ' + _imgwidth + 'px;'
-						 + 'overflow: hidden; position: relative; z-index: 1; } ';
-					_css += _elemname + ' a img { float: left; position: absolute; margin: auto;'
-						 + ' min-height: ' + _imgwidth + 'px; } ';
 					break;
 */
 			}
