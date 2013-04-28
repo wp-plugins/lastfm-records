@@ -4,8 +4,8 @@ Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.4.2
-Stable tag: 1.7.2
+Tested up to: 3.5.1
+Stable tag: 1.7.4
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -23,17 +23,46 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 
 4b. (shortcode) this plugin now has its own shortcode: `[lastfmrecords]`. It uses the global plugin settings, but comes with arguments to overrule them. More info on the arguments under `Shortcode info`.
 
-== Upgrade Notice ==
+== Frequently Asked Questions ==
+
+= Why doesn't it work? =
+
+It's not easy to answer this question. Lots of testing has been done to make sure the plugin works in different browsers, and as part of different themes. If you are not seeing cd covers on your site, there are a couple of things you can check.
+
+= Did you add a widget or shortcode? =
+
+Installing the plugin doesn't add anything to your site. You have to specify where the cd covers will be added. If your theme supports widgets, you can use them. To show the cd covers on a page or post, shortcodes are available.
+
+= Do you see javascript errors? =
+
+The plugin depends on javascript (a programming language in your browser) to display the cd covers. If another script in your page is generating errors, this can prevent this plugin from working correctly.
+
+= Do you use a caching plugin? =
+
+Some caching plugins (like W3 Total Cache) combine different javascript files into one. Before contacting me for help, please disable the caching and check if this resolves the issue.
+
+= Other reasons =
+
+If you still have troubles, please set the debug option in the settings to "yes" and check the [javascript console](http://webmasters.stackexchange.com/questions/8525/how-to-open-the-javascript-console-in-different-browsers) in Firefox or Chrome. 
+
+= Can I make a suggestion for the plugin? =
+
+Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums] (http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
+
+== Changelog ==
+
+= 1.7.4 =
+
+* fixed a bug where album covers were not shown for your topalbums (thanks to wordpress.org user nszumowski for solving the bug for me)
+
+= 1.7.3 =
+
+* added topArtists to the period options. Thanks to [matthew_darcy](http://www.last.fm/user/matthew_darcy) for suggesting it.
+* fixed some typos in the readme.txt
 
 = 1.7.2 =
 
 Fixed the stylesheet issue that was fixed in 1.7.1
-
-= 1.7.1 =
-
-Fixed some issues: only load javascript when needed, get last.fm username from settings if not in shortcode. Fixed a stylesheet problem.
-
-== Changelog ==
 
 = 1.7.1 =
 
@@ -47,10 +76,6 @@ Fixed some issues: only load javascript when needed, get last.fm username from s
 * restructured the code, the javascript now is a jQuery plugin
 * added a WordPress shortcode
 * changed "you have to" into "please" in the last.fm.records.js file
-
-= todo list =
-
-* a slideshow feature is in the works, but not offered yet.
 
 = 1.6.2 =
 * fixed periods `tracks7day`, `tracks6month`, `tracks12month` and `tracksoverall`

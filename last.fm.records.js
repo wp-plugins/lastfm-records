@@ -1,5 +1,5 @@
 // released together with Last.Fm Records plugin for WordPress
-// version 1.7.2
+// version 1.7.4
 
 // a plugin for jQuery
 
@@ -24,6 +24,7 @@
 			// choose from
 			// - recenttracks
 			// - lovedtracks
+
 			// - tracks7day
 			// - tracks3month
 			// - tracks6month
@@ -35,6 +36,13 @@
 			// - topalbums6month
 			// - topalbums12month
 			// - topalbumsoverall
+
+			// - topartists7day
+			// - topartists3month
+			// - topartists6month
+			// - topartists12month
+			// - topartistsoverall
+
 			'period'            : 'recenttracks',
 
 			// in pixels
@@ -199,6 +207,14 @@
 				case 'topalbums12month':
 					_data = _data.topalbums.album;
 					break;
+				case 'topartists':
+				case 'topartistsoverall':
+				case 'topartists7day':
+				case 'topartists3month':
+				case 'topartists6month':
+				case 'topartists12month':
+					_data = _data.topartists.artist;
+					break;
 				default:
 					// should've been caught by _getLastFmData()
 					_logStatus("Sorry, period '" + _settings.period + "' is unknown.");
@@ -224,12 +240,22 @@
 					if (i > _settings.count) {
 						return false;
 					}
+					_logStatus(_json);
 
+					// 20130416 jns
+					// now that I'm adding top artists, the variable name "track" is not correct
+					// then again, it has been incorrect ever since I added topalbums
 					var track = [];
 					track.cdcover		= _json.image ? _findLargestImage(_json.image, _settings.LASTFM_DEFAULTIMG) : false;
-					track.artistname	= _json.artist['#text'] || _json.artist.name;
-					track.artistmbid	= _json.artist['mbid'];
-					track.name			= _json.name;
+					if ('topartists' == _settings.period.slice(0, 10)) {
+						track.artistname	= _json.name;
+						track.artistmbid	= '';
+						track.name			= '';
+					} else {
+						track.artistname	= _json.artist['#text'] || _json.artist.name;
+						track.artistmbid	= _json.artist['mbid'];
+						track.name			= _json.name;
+					}
 					track.mbid			= _json.mbid;
 					// does the url include 'http://'? if not add it to prevent relative links
 					track.url			= ('http://' == _json.url.substr(0, 7).toLowerCase())
@@ -273,7 +299,11 @@
 				});
 
 				// always set title of image
-				var _title = _track.name + ' by ' + _track.artistname;
+				// 20130416 jns: when selecting topartists, there are no track titles
+				var _title = _track.artistname;
+				if ('' != _track.name) {
+					var _title = _track.name + ' by ' + _title;
+				}
 				if ('' != _track.time) {
 					_title += ' (' + _track.time + ')';
 				}
@@ -356,6 +386,22 @@
 						break;
 					case 'recenttracks':
 						_method = 'user.getrecenttracks';
+						break;
+					case 'topartists':
+					case 'topartistsoverall':
+						_method = 'user.gettopartists&period=overall';
+						break;
+					case 'topartists7day':
+						_method = 'user.gettopartists&period=7day';
+						break;
+					case 'topartists3month':
+						_method = 'user.gettopartists&period=3month';
+						break;
+					case 'topartists6month':
+						_method = 'user.gettopartists&period=6month';
+						break;
+					case 'topartists12month':
+						_method = 'user.gettopartists&period=12month';
 						break;
 					default:
 						// no default

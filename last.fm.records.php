@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.7.2
+Version: 1.7.4
 License: GPL2
 */
 
@@ -299,16 +299,25 @@ class LastfmRecords {
 		$items = array(
 					array('recenttracks', 'Recent tracks'),
 					array('lovedtracks', 'Loved tracks'),
+
 					array('tracks7day', 'Tracks -- last 7 days'),
 					array('tracks3month', 'Tracks -- last 3 months'),
 					array('tracks6month', 'Tracks -- last 6 months'),
 					array('tracks12month', 'Tracks -- last 12 months'),
 					array('tracksoverall', 'Tracks -- all time'),
+
 					array('topalbums7day', 'Albums -- last 7 days'),
 					array('topalbums3month', 'Albums -- last 3 months'),
 					array('topalbums6month', 'Albums -- last 6 months'),
 					array('topalbums12month', 'Albums -- last 12 months'),
-					array('topalbumsoverall', 'Top albums -- all time')
+					array('topalbumsoverall', 'Albums -- all time'),
+
+					array('topartists7day', 'Artists -- last 7 days'),
+					array('topartists3month', 'Artists -- last 3 months'),
+					array('topartists6month', 'Artists -- last 6 months'),
+					array('topartists12month', 'Artists -- last 12 months'),
+					array('topartistsoverall', 'Artists -- all time')
+
 				);
 		echo "<select id='plugin_period' name='lastfm-records[period]'>\n";
 		foreach($items as $item) {
