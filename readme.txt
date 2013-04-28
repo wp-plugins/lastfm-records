@@ -5,7 +5,7 @@ Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
 Tested up to: 3.5.1
-Stable tag: 1.7.3
+Stable tag: 1.7.4
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -45,13 +45,15 @@ Some caching plugins (like W3 Total Cache) combine different javascript files in
 
 If you still have troubles, please set the debug option in the settings to "yes" and check the [javascript console](http://webmasters.stackexchange.com/questions/8525/how-to-open-the-javascript-console-in-different-browsers) in Firefox or Chrome. 
 
-== Upgrade Notice ==
+= Can I make a suggestion for the plugin? =
 
-= 1.7.3 =
-
-The plugin now gives you the option to show your top artists. By the way, thanks for all the great feedback for this plugin. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
+Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums] (http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
 
 == Changelog ==
+
+= 1.7.4 =
+
+* fixed a bug where album covers were not shown for your topalbums (thanks to wordpress.org user nszumowski for solving the bug for me)
 
 = 1.7.3 =
 

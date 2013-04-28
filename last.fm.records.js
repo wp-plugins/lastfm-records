@@ -1,5 +1,5 @@
 // released together with Last.Fm Records plugin for WordPress
-// version 1.7.3
+// version 1.7.4
 
 // a plugin for jQuery
 
@@ -206,6 +206,7 @@
 				case 'topalbums6month':
 				case 'topalbums12month':
 					_data = _data.topalbums.album;
+					break;
 				case 'topartists':
 				case 'topartistsoverall':
 				case 'topartists7day':
