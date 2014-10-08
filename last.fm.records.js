@@ -1,5 +1,5 @@
 // released together with Last.Fm Records plugin for WordPress
-// version 1.7.4
+// version 1.7.5
 
 // a plugin for jQuery
 
@@ -58,7 +58,8 @@
 
 			// only works when period is set to recenttracks
 			'refreshmin'        : 3,
-			'defaultthumb'      : 'http://cdn.last.fm/depth/catalogue/noimage/cover_85px.gif',
+			// 'defaultthumb'      : 'http://cdn.last.fm/depth/catalogue/noimage/cover_85px.gif',
+			'defaultthumb'		: false,
 
 			// add logging data to console (when console is available)
 			'debug'             : false,
@@ -71,10 +72,8 @@
 
 			// capitals to pretend these are constants
 			'LASTFM_APIKEY'     : 'fbfa856cc3af93c43359b57921b1e64e',
-			'LASTFM_WS_URL'     : 'http://ws.audioscrobbler.com/2.0/',
+			'LASTFM_WS_URL'     : 'http://ws.audioscrobbler.com/2.0/'
 
-			// last.fm added a default album image, and I don't like it
-			'LASTFM_DEFAULTIMG' : 'http://cdn.last.fm/flatness/catalogue/noimage/2/default_album_medium.png'
 		};
 
 		// keep track of artist images we found
@@ -117,21 +116,31 @@
 		}
 
 		var _findLargestImage = function(_imgarray, _lastfmdefaultimg) {
-			_biggestYet = false;
+
+			_sizeFound	= false;
+			_imgUrl		= '';
 
 			jQuery.each(_imgarray, function(j, _img) {
-				if ('large' == _img.size) {
-					_biggestYet = _img['#text'];
-					// biggest found, get out of this loop
+
+				if ('extralarge' == _img.size) {
+					_imgUrl		= _img['#text'];
+					// get out of this loop
 					return false;
-				} else if ('medium' == _img.size) {
-					_biggestYet = _img['#text'];
-				} else if (('small' == _img.size) && ('' == _biggestYet)) {
-					_biggestYet = _img['#text'];
+				}
+
+				if ('large' == _img.size) {
+					_imgUrl		= _img['#text'];
+					_sizeFound	= 'large';
+				} else if (('medium' == _img.size) && ('large' != _sizeFound)) {
+					_imgUrl		= _img['#text'];
+					_sizeFound	= _img.size;
+				} else if (('small' == _img.size) && (false === _sizeFound)) {
+					_imgUrl		= _img['#text'];
+					_sizeFound	= _img.size;
 				}
 			});
 
-			return (_settings.LASTFM_DEFAULTIMG == _biggestYet) ? false : _biggestYet;
+			return _imgUrl;
 		}
 
 		function _getPluralS(_c) {
@@ -576,9 +585,12 @@
 						_opts			= options['widget'];
 					}
 
+/*
 					if ('' == _opts.defaultthumb) {
 						delete _opts.defaultthumb;
 					}
+*/
+
 					// jQuery.extend alters original options array? didn't use it as first argument.
 					// i'm obviously using it wrong, but can't find why
 					jQuery.each(settings, function(_key, _value) {
@@ -586,6 +598,18 @@
 							_opts[_key] = _value;
 						}
 					});
+
+					// 20130918 default thumb at cdn.last.fm has disappeared from the internet
+					if (false == _opts.defaultthumb) {
+						jQuery.each(
+							jQuery('script'),
+							function() {
+								if (this.src.indexOf('last.fm.records.js') >= 0) {
+									_opts.defaultthumb = this.src.substr(0, this.src.lastIndexOf('/')+1) + 'defaultcover.png';
+								}
+							}
+						);
+					}
 				}
 
 				// save settings for this element to the element, so callback functions can use them

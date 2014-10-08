@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.7.4
+Version: 1.7.5
 License: GPL2
 */
 
