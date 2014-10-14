@@ -4,14 +4,14 @@ Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 3.5.1
-Stable tag: 1.7.4
+Tested up to: 4.0
+Stable tag: 1.7.6
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
 == Description ==
 
-This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm.
+This plugin shows cd covers on your WordPress site. It connects to last.fm and grabs the list of cds you listened to recently and tries to find the cover images at last.fm.
 
 == Installation ==
 
@@ -27,7 +27,7 @@ This plugin shows cd covers on your Wordpress weblog. It connects to last.fm and
 
 = Why doesn't it work? =
 
-It's not easy to answer this question. Lots of testing has been done to make sure the plugin works in different browsers, and as part of different themes. If you are not seeing cd covers on your site, there are a couple of things you can check.
+It's not easy to answer this question. Lots of testing has been done to make sure the plugin works in different browsers, and as part of different themes. If you are not seeing cd covers on your site, there are a couple of things you can check:
 
 = Did you add a widget or shortcode? =
 
@@ -43,13 +43,26 @@ Some caching plugins (like W3 Total Cache) combine different javascript files in
 
 = Other reasons =
 
-If you still have troubles, please set the debug option in the settings to "yes" and check the [javascript console](http://webmasters.stackexchange.com/questions/8525/how-to-open-the-javascript-console-in-different-browsers) in Firefox or Chrome. 
+If you still have troubles, please set the debug option in the settings to "yes" and check the [javascript console](http://webmasters.stackexchange.com/questions/8525/how-to-open-the-javascript-console-in-different-browsers).
 
 = Can I make a suggestion for the plugin? =
 
-Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums] (http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
+Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums](http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
 
 == Changelog ==
+
+= 1.7.6 = 
+
+* cleaned up some messy code
+* fixed a bug in Safari
+* fixed: jQuery logged to console even when told not to in the settings
+
+= 1.7.5 =
+
+* default thumbnail image no longer at last.fm, yet in the plugin folder.
+* tested with WordPress 4.0
+* show bigger images when available at last.fm
+* added icons and header image to plugin
 
 = 1.7.4 =
 

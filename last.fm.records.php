@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.7.4
+Version: 1.7.6
 License: GPL2
 */
 
@@ -136,265 +136,286 @@ function lfr_shortcode($atts) {
 // Add link to settings in 'Manage plugins' //
 //////////////////////////////////////////////
 
-add_filter('plugin_action_links', 'set_plugin_meta', 10, 2);
-function set_plugin_meta($links, $file) {
+add_filter('plugin_action_links', 'lastfm_add_settings_link', 10, 2);
+function lastfm_add_settings_link($links, $file) {
 	$plugin = basename(__FILE__);
 
 	// create link
 	if (basename($file) == $plugin) {
-		return array_merge(
-					array('<a href="options-general.php?page=' . $plugin . '">' . __('Settings') . '</a>'),
-					$links
-		);
+		$_settingslink = '<a href="options-general.php?page=' . $plugin . '">' . __('Settings') . '</a>';
+		array_unshift($links, $_settingslink);
 	}
 
 	return $links;
 }
 
-////////////
-// Widget //
-////////////
+////////////////
+// Widget API //
+////////////////
 
-// register LastFmRecords widget
-add_action('widgets_init', create_function('', 'return register_widget("LastFmRecordsWidget");'));
+if ( !class_exists( 'LastFmRecords_Widget' ) ) {
 
-class LastFmRecordsWidget extends WP_Widget {
+	class LastFmRecords_Widget extends WP_Widget {
+	
+		public function __construct() {
 
-	function LastFmRecordsWidget() {
-		parent::WP_Widget(false, $name = 'LastFmRecords');	
-	}
+			parent::__construct(
+				'lastfmrecords', // Base ID
+				'Last.Fm Records', // Name
+				array( 'description' => 'Show your great taste in music!' ) // Args
+			);
 
-	function widget($args, $instance) {		
-		global $lfr_addscript;
-		$lfr_addscript = true;
+		}
+	
+		public function widget($args, $instance) {		
+			global $lfr_addscript;
+			$lfr_addscript = true;
+	
+			extract($args);
+			$options = get_option('lastfm-records');
+	
+			$_style = (array_key_exists('stylesheet', $options)) ? ' lfr_' . $options['stylesheet'] : '';
+	
+			echo "\n\n" . $before_widget . $before_title . $instance['title'] . $after_title . "\n";
+			echo "<div id='lastfmrecords' class='lastfmrecords" . $_style . "'></div>\n";
+			echo $after_widget . "\n\n";
+		}
+	
+		public function update($new_instance, $old_instance) {				
+			return $new_instance;
+		}
+	
+		public function form($instance) {				
 
-		extract($args);
-		$options = get_option('lastfm-records');
+			$_title = isset( $instance['title'] ) ? esc_attr($instance['title']) : '';
+	?>
+	            <p>
+	              <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?>
+	                <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $_title; ?>" />
+	              </label>
+	            </p>
+	<?php 
+		}
+	} // class LastFmRecords_Widget
 
-		$_style = (array_key_exists('stylesheet', $options)) ? ' lfr_' . $options['stylesheet'] : '';
+}
 
-		echo "\n\n" . $before_widget . $before_title . $instance['title'] . $after_title . "\n";
-		echo "<div id='lastfmrecords' class='lastfmrecords" . $_style . "'></div>\n";
-		echo $after_widget . "\n\n";
-	}
-
-	function update($new_instance, $old_instance) {				
-		return $new_instance;
-	}
-
-	function form($instance) {				
-		$title = esc_attr($instance['title']);
-?>
-            <p>
-              <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?>
-                <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
-              </label>
-            </p>
-<?php 
-	}
-} // class LastFmRecordsWidget
+function register_lastfm_widget() {
+    register_widget("LastFmRecords_Widget");
+}
+add_action( 'widgets_init', 'register_lastfm_widget' );
 
 //////////////////
 // Settings API //
 //////////////////
 
-class LastfmRecords {
+if ( !class_exists( 'LastfmRecords_Settings' ) ) {
+	class LastfmRecords_Settings {
+	
+		public function __construct() {
 
-	function init() {
-		register_setting('Last_fm_Records', 'lastfm-records', array('LastfmRecords', 'validate'));
+			add_action( 'admin_init', array( &$this, 'init' ) );
+			add_action( 'admin_menu', array( &$this, 'admin_menu' ) );
 
-		// settings for Last.fm
-		add_settings_section('lastfm-section', 'Last.fm' , array('LastfmRecords', 'section_lastfm'), basename(__FILE__));
+		}
+	
+		public function init() {
+			register_setting( 'Last_fm_Records', 'lastfm-records', array( &$this, 'validate' ) );
+	
+			// settings for Last.fm
+			add_settings_section( 'lastfm-section', 'Last.fm' , array( &$this, 'section_lastfm' ), basename( __FILE__ ) );
+	
+			add_settings_field( 'username', 'Last.fm Username',  array( &$this, 'setting_username' ), basename( __FILE__ ), 'lastfm-section');
+			add_settings_field( 'period', 'Period to get data for',  array( &$this, 'setting_period'), basename(__FILE__), 'lastfm-section');
+	
+			// settings for displaying
+			add_settings_section( 'visuals-section', 'Visuals' , array( &$this, 'section_visuals' ), basename( __FILE__ ) );
+	
+			add_settings_field( 'stylesheet', 'Add some style',  array( &$this, 'setting_stylesheet' ), basename( __FILE__ ), 'visuals-section' );
+			add_settings_field( 'count', 'Number of covers',  array( &$this, 'setting_count' ), basename( __FILE__ ), 'visuals-section' );
+			add_settings_field( 'imgwidth', 'Image width (pixels)',  array( &$this, 'setting_imgwidth' ), basename( __FILE__ ), 'visuals-section' );
+			add_settings_field( 'defaultthumb', 'Default Thumbnail (url)', array( &$this, 'setting_defaultthumb' ), basename( __FILE__ ), 'visuals-section' );
+	
+			// optional settings
+			add_settings_section( 'optional-section', 'Optional settings' , array( &$this, 'section_optional' ), basename( __FILE__ ) );
 
-		add_settings_field('username', 'Last.fm Username',  array('LastfmRecords', 'setting_username'), basename(__FILE__), 'lastfm-section');
-		add_settings_field('period', 'Period to get data for',  array('LastfmRecords', 'setting_period'), basename(__FILE__), 'lastfm-section');
+			add_settings_field( 'linknewscreen', 'Open links in new window',  array( &$this, 'setting_linknewscreen' ), basename( __FILE__ ), 'optional-section' );
+			add_settings_field( 'refresh', 'Refresh covers every x minutes',  array( &$this, 'setting_refresh' ), basename( __FILE__ ), 'optional-section' );
+			add_settings_field( 'offset', 'Your timezone',  array( &$this, 'setting_offset' ), basename( __FILE__ ), 'optional-section' );
+			add_settings_field( 'debug', 'Show debug info',  array( &$this, 'setting_debug' ), basename( __FILE__ ), 'optional-section' );
+		}
+	
+		public function admin_menu() {
 
-		// settings for displaying
-		add_settings_section('visuals-section', 'Visuals' , array('LastfmRecords', 'section_visuals'), basename(__FILE__));
+			if ( !function_exists( 'current_user_can' ) || !current_user_can( 'manage_options' ) ) {
+				return;
+			}
+	
+			if ( function_exists( 'add_options_page' ) ) {
+				$_result = add_options_page( 'Last.fm Records', 'Last.fm Records', 'manage_options', basename( __FILE__ ), array( &$this, 'showform' ) );
+				// var_dump($_result); exit;
+			}
 
-		add_settings_field('stylesheet', 'Add some style',  array('LastfmRecords', 'setting_stylesheet'), basename(__FILE__), 'visuals-section');
-		add_settings_field('count', 'Number of covers',  array('LastfmRecords', 'setting_count'), basename(__FILE__), 'visuals-section');
-		add_settings_field('imgwidth', 'Image width (pixels)',  array('LastfmRecords', 'setting_imgwidth'), basename(__FILE__), 'visuals-section');
-		add_settings_field('defaultthumb', 'Default Thumbnail (url)', array('LastfmRecords', 'setting_defaultthumb'), basename(__FILE__), 'visuals-section');
+		}
+	
+		public function showform() {
 
-		// optional settings
-		add_settings_section('optional-section', 'Optional settings' , array('LastfmRecords', 'section_optional'), basename(__FILE__));
-
-		add_settings_field('linknewscreen', 'Open links in new window',  array('LastfmRecords', 'setting_linknewscreen'), basename(__FILE__), 'optional-section');
-		add_settings_field('refresh', 'Refresh covers every x minutes',  array('LastfmRecords', 'setting_refresh'), basename(__FILE__), 'optional-section');
-		add_settings_field('offset', 'Your timezone',  array('LastfmRecords', 'setting_offset'), basename(__FILE__), 'optional-section');
-		add_settings_field('debug', 'Show debug info',  array('LastfmRecords', 'setting_debug'), basename(__FILE__), 'optional-section');
-	}
-
-	function admin_menu() {
-		if (!function_exists('current_user_can') || !current_user_can('manage_options')) {
-			return;
+			$options = get_option( 'lastfm-records' );
+	?>
+	        <div class="wrap">
+	          <?php screen_icon("options-general"); ?>
+	          <h2>Last.fm Records</h2>
+	          <form action="options.php" method="post">
+	            <?php settings_fields('Last_fm_Records'); ?>
+	            <?php do_settings_sections(basename(__FILE__)); ?>
+	            <p class="submit">
+	              <input name="Submit" type="submit" class="button-primary" value="<?php esc_attr_e('Save Changes'); ?>" />
+	            </p>
+	          </form>
+	        </div> 
+	<?php 
+		}
+	
+		public function validate($input) {
+			return $input;
+		}
+	
+		public function section_lastfm() {
+			// echo "Please fill in your last.fm username and the period you want to show covers for. If you can want, you can overrule the image last.fm uses when no cover is available.";
+		}
+	
+		public function section_visuals() {
+			// echo "Here you can specify how the covers will be displayed.";
+		}
+	
+		public function section_optional() {
+			// echo "These settings are not necessary for the plugin to function. Yet, if you played with Lego when you were young, you might want to play with them.";
+		}
+	
+		public function setting_username() {
+			$options = get_option('lastfm-records');
+			echo "<input id='plugin_username' name='lastfm-records[username]' size='40' type='text' value='{$options['username']}' />";
+		}
+	
+		public function setting_defaultthumb() {
+			$options	= get_option('lastfm-records');
+			$cover		= ('' != trim($options['defaultthumb']))
+						? "<br /><img src='" . $options['defaultthumb'] . "' style='margin-top: 10px; max-height: 80px; border: 1px solid #ddd;' />" 
+						: "";
+	
+			echo "<input id='plugin_defaultthumb' name='lastfm-records[defaultthumb]' size='40' type='text' value='{$options['defaultthumb']}' />" . $cover;
+		}
+	
+		public function setting_count() {
+			$options = get_option('lastfm-records');
+			echo "<input id='plugin_count' name='lastfm-records[count]' size='10' type='text' value='{$options['count']}' />";
+		}
+	
+		public function setting_imgwidth() {
+			$options = get_option('lastfm-records');
+			echo "<input id='plugin_imgwidth' name='lastfm-records[imgwidth]' size='10' type='text' value='{$options['imgwidth']}' />";
+		}
+	
+		public function setting_period() {
+			$options = get_option('lastfm-records');
+			$items = array(
+						array('recenttracks', 'Recent tracks'),
+						array('lovedtracks', 'Loved tracks'),
+	
+						array('tracks7day', 'Tracks -- last 7 days'),
+						array('tracks3month', 'Tracks -- last 3 months'),
+						array('tracks6month', 'Tracks -- last 6 months'),
+						array('tracks12month', 'Tracks -- last 12 months'),
+						array('tracksoverall', 'Tracks -- all time'),
+	
+						array('topalbums7day', 'Albums -- last 7 days'),
+						array('topalbums3month', 'Albums -- last 3 months'),
+						array('topalbums6month', 'Albums -- last 6 months'),
+						array('topalbums12month', 'Albums -- last 12 months'),
+						array('topalbumsoverall', 'Albums -- all time'),
+	
+						array('topartists7day', 'Artists -- last 7 days'),
+						array('topartists3month', 'Artists -- last 3 months'),
+						array('topartists6month', 'Artists -- last 6 months'),
+						array('topartists12month', 'Artists -- last 12 months'),
+						array('topartistsoverall', 'Artists -- all time')
+	
+					);
+			echo "<select id='plugin_period' name='lastfm-records[period]'>\n";
+			foreach($items as $item) {
+				$selected = ($options['period'] == $item[0]) ? 'selected="selected"' : '';
+				echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
+			}
+			echo "</select>\n";
+		}
+	
+		public function setting_stylesheet() {
+			$options = get_option('lastfm-records');
+			$_stylesheet = (!$options['stylesheet']) ? 2 : $options['stylesheet'];
+	
+			$items = array(
+						array('0', 'None'),
+						array('2', 'Plain and simple'),
+						array('1', 'Show full cover on mouse hover'),
+						// array('3', 'Slideshow')
+					);
+			echo "<select id='plugin_stylesheet' name='lastfm-records[stylesheet]'>\n";
+			foreach($items as $item) {
+				$selected = ($_stylesheet == $item[0]) ? 'selected="selected"' : '';
+				echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
+			}
+			echo "</select>\n";
+		}
+	
+		public function setting_debug() {
+			$options = get_option('lastfm-records');
+			$items = array(
+				array('0', 'No'),
+				array('1', 'Yes')
+			);
+			echo "<select id='plugin_debug' name='lastfm-records[debug]'>\n";
+			foreach($items as $item) {
+				$selected = ($options['debug'] == $item[0]) ? 'selected="selected"' : '';
+				echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
+			}
+			echo "</select>\n";
+			echo "<br /><i>If your browser supports it, you can view debug info in the javascript console. For a slightly better performance, keep this set to 'No'.</i>";
+		}
+	
+		public function setting_linknewscreen() {
+			$options = get_option('lastfm-records');
+			$items = array(
+						array('0', 'No'),
+						array('1', 'Yes')
+					);
+			echo "<select id='plugin_linknewscreen' name='lastfm-records[linknewscreen]'>\n";
+			foreach($items as $item) {
+				$selected = ($options['linknewscreen'] == $item[0]) ? 'selected="selected"' : '';
+				echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
+			}
+			echo "</select>\n";
+		}
+	
+		public function setting_refresh() {
+			$options = get_option('lastfm-records');
+			echo "<input id='plugin_refresh' name='lastfm-records[refresh]' size='10' type='text' value='{$options['refresh']}' /><br />"
+			   . "<i>This setting only works when 'period' is set to Recent Tracks.</i>";
+		}
+	
+		public function setting_offset() {
+			if (get_option('gmt_offset') < 0) {
+				echo "gmt -" . get_option('gmt_offset');
+			} else if (get_option('gmt_offset') > 0) {
+				echo "gmt +" . get_option('gmt_offset');
+			} else {
+				echo "You're on gmt";
+			}
+			echo "<br /><i>The plugin uses the <a href='" . get_admin_url() . "options-general.php'>WordPress setting</a>.</i>";
 		}
 
-		if (function_exists('add_options_page')) {
-			add_options_page('Last.fm Records', 'Last.fm Records', 'manage_options', basename(__FILE__), array('LastfmRecords', 'showform'));
-		}
 	}
+} // END of class LastfmRecords_Settings
 
-	function showform() {
-		$options = get_option('lastfm-records');
-?>
-        <div class="wrap">
-          <?php screen_icon("options-general"); ?>
-          <h2>Last.fm Records</h2>
-          <form action="options.php" method="post">
-            <?php settings_fields('Last_fm_Records'); ?>
-            <?php do_settings_sections(basename(__FILE__)); ?>
-            <p class="submit">
-              <input name="Submit" type="submit" class="button-primary" value="<?php esc_attr_e('Save Changes'); ?>" />
-            </p>
-          </form>
-          <?php // LastfmRecords::show_donate_button(); ?>
-        </div> 
-<?php 
-	}
-
-	function validate($input) {
-		return $input;
-	}
-
-	function section_lastfm() {
-		// echo "Please fill in your last.fm username and the period you want to show covers for. If you can want, you can overrule the image last.fm uses when no cover is available.";
-	}
-
-	function section_visuals() {
-		// echo "Here you can specify how the covers will be displayed.";
-	}
-
-	function section_optional() {
-		// echo "These settings are not necessary for the plugin to function. Yet, if you played with Lego when you were young, you might want to play with them.";
-	}
-
-	function setting_username() {
-		$options = get_option('lastfm-records');
-		echo "<input id='plugin_username' name='lastfm-records[username]' size='40' type='text' value='{$options['username']}' />";
-	}
-
-	function setting_defaultthumb() {
-		$options	= get_option('lastfm-records');
-		$cover		= ('' != trim($options['defaultthumb']))
-					? "<br /><img src='" . $options['defaultthumb'] . "' style='margin-top: 10px; max-height: 80px; border: 1px solid #ddd;' />" 
-					: "";
-
-		echo "<input id='plugin_defaultthumb' name='lastfm-records[defaultthumb]' size='40' type='text' value='{$options['defaultthumb']}' />" . $cover;
-	}
-
-	function setting_count() {
-		$options = get_option('lastfm-records');
-		echo "<input id='plugin_count' name='lastfm-records[count]' size='10' type='text' value='{$options['count']}' />";
-	}
-
-	function setting_imgwidth() {
-		$options = get_option('lastfm-records');
-		echo "<input id='plugin_imgwidth' name='lastfm-records[imgwidth]' size='10' type='text' value='{$options['imgwidth']}' />";
-	}
-
-	function setting_period() {
-		$options = get_option('lastfm-records');
-		$items = array(
-					array('recenttracks', 'Recent tracks'),
-					array('lovedtracks', 'Loved tracks'),
-
-					array('tracks7day', 'Tracks -- last 7 days'),
-					array('tracks3month', 'Tracks -- last 3 months'),
-					array('tracks6month', 'Tracks -- last 6 months'),
-					array('tracks12month', 'Tracks -- last 12 months'),
-					array('tracksoverall', 'Tracks -- all time'),
-
-					array('topalbums7day', 'Albums -- last 7 days'),
-					array('topalbums3month', 'Albums -- last 3 months'),
-					array('topalbums6month', 'Albums -- last 6 months'),
-					array('topalbums12month', 'Albums -- last 12 months'),
-					array('topalbumsoverall', 'Albums -- all time'),
-
-					array('topartists7day', 'Artists -- last 7 days'),
-					array('topartists3month', 'Artists -- last 3 months'),
-					array('topartists6month', 'Artists -- last 6 months'),
-					array('topartists12month', 'Artists -- last 12 months'),
-					array('topartistsoverall', 'Artists -- all time')
-
-				);
-		echo "<select id='plugin_period' name='lastfm-records[period]'>\n";
-		foreach($items as $item) {
-			$selected = ($options['period'] == $item[0]) ? 'selected="selected"' : '';
-			echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
-		}
-		echo "</select>\n";
-	}
-
-	function setting_stylesheet() {
-		$options = get_option('lastfm-records');
-		$_stylesheet = (!$options['stylesheet']) ? 2 : $options['stylesheet'];
-
-		$items = array(
-					array('0', 'None'),
-					array('2', 'Plain and simple'),
-					array('1', 'Fancy hovering effect'),
-					// array('3', 'Slideshow')
-				);
-		echo "<select id='plugin_stylesheet' name='lastfm-records[stylesheet]'>\n";
-		foreach($items as $item) {
-			$selected = ($_stylesheet == $item[0]) ? 'selected="selected"' : '';
-			echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
-		}
-		echo "</select>\n";
-	}
-
-	function setting_debug() {
-		$options = get_option('lastfm-records');
-		$items = array(
-			array('0', 'No'),
-			array('1', 'Yes')
-		);
-		echo "<select id='plugin_debug' name='lastfm-records[debug]'>\n";
-		foreach($items as $item) {
-			$selected = ($options['debug'] == $item[0]) ? 'selected="selected"' : '';
-			echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
-		}
-		echo "</select>\n";
-		echo "<br /><i>If your browser supports it, you can view debug info in the javascript console. For a slightly better performance, keep this set to 'No'.</i>";
-	}
-
-	function setting_linknewscreen() {
-		$options = get_option('lastfm-records');
-		$items = array(
-					array('0', 'No'),
-					array('1', 'Yes')
-				);
-		echo "<select id='plugin_linknewscreen' name='lastfm-records[linknewscreen]'>\n";
-		foreach($items as $item) {
-			$selected = ($options['linknewscreen'] == $item[0]) ? 'selected="selected"' : '';
-			echo "<option value='" . $item[0] . "' " . $selected . ">" . $item[1] . "</option>\n";
-		}
-		echo "</select>\n";
-	}
-
-	function setting_refresh() {
-		$options = get_option('lastfm-records');
-		echo "<input id='plugin_refresh' name='lastfm-records[refresh]' size='10' type='text' value='{$options['refresh']}' /><br />"
-		   . "<i>This setting only works when 'period' is set to Recent Tracks.</i>";
-	}
-
-	function setting_offset() {
-		if (get_option('gmt_offset') < 0) {
-			echo "gmt -" . get_option('gmt_offset');
-		} else if (get_option('gmt_offset') > 0) {
-			echo "gmt +" . get_option('gmt_offset');
-		} else {
-			echo "You're on gmt";
-		}
-		echo "<br /><i>The plugin uses the <a href='" . get_admin_url() . "options-general.php'>WordPress setting</a>.</i>";
-	}
-
-	// class is over
-}
- 
-add_action('admin_init', array('LastfmRecords', 'init'));
-add_action('admin_menu', array('LastfmRecords', 'admin_menu'));
+$_lastfm_settings = new LastfmRecords_Settings();
 
 ?>
