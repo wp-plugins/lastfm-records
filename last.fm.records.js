@@ -81,7 +81,7 @@
 		var _imgs_found    = [];
 
 		var _logStatus = function(text) {
-			if (_settings.debug)
+			if ((false !== _settings.debug) && ('0' !== _settings.debug))
 				if ('undefined' != typeof console)
 					if ('function' == typeof console.log)
 						if ('object' == typeof text)
@@ -249,7 +249,7 @@
 					if (i > _settings.count) {
 						return false;
 					}
-					_logStatus(_json);
+					// _logStatus(_json);
 
 					// 20130416 jns
 					// now that I'm adding top artists, the variable name "track" is not correct
@@ -501,10 +501,7 @@
 				_img = jQuery('<img></img>')
 						.attr('src', _settings.defaultthumb)
 						.attr('id', 'lfr_' + _elem.attr("id") + "_" + i)
-						.error(
-							function() {
-								jQuery(this).attr("src", _settings.defaultthumb);
-							})
+						.on('error', function() { jQuery(this).attr("src", _settings.defaultthumb); })
 						.appendTo(_a);
 
 				_li.appendTo(_ol);
@@ -538,6 +535,8 @@
 				case 'simple':
 					_css += _elemname + ' { padding: 0px; padding-bottom: 10px; } ';
 					_css += _elemname + ' ol, ' + _elemname + ' li { margin: 0; padding: 0; list-style: none; } ';
+					// clear the main list
+					_css += _elemname + ' ol:after { content: ""; display: table; clear: both; } ';
 					_css += _elemname + ' li { float: left; margin: 0px 5px 5px 0px; } ';
 					_css += _elemname + ' a { display: block; float: left; width: ' + _imgwidth + 'px;'
 						 + ' height: ' + _imgwidth + 'px; line-height: ' + _imgwidth + 'px;'
@@ -549,6 +548,8 @@
 					_css += _elemname + ' { padding: 0px; padding-bottom: 10px; } ';
 					// starting point was http://cssglobe.com/lab/overflow_thumbs/
 					_css += _elemname + ' ol, ' + _elemname + ' li { margin: 0; padding: 0; list-style: none; } ';
+					// clear the main list
+					_css += _elemname + ' ol:after { content: ""; display: table; clear: both; } ';
 					_css += _elemname + ' li { float: left; margin: 0px 5px 5px 0px; } ';
 					_css += _elemname + ' a { display: block; float: left; width: ' + _imgwidth + 'px;'
 						 + ' height: ' + _imgwidth + 'px; overflow: hidden; position: relative; z-index: 1; } ';
