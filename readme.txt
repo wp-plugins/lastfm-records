@@ -4,8 +4,8 @@ Contributors: jeroensmeets
 Donate link: http://amzn.com/w/2XZPC0CD6SILM
 Tags: lastfm, last.fm, cd, cover, cd cover, plugin, widget, music, image, images, sidebar
 Requires at least: 3.0
-Tested up to: 4.0
-Stable tag: 1.7.6
+Tested up to: 4.1
+Stable tag: 1.7.7
 
 This plugin shows cd covers for cds your listened to, according to last.fm. It can show covers in a page or post, and you can add it as a widget.
 
@@ -47,9 +47,15 @@ If you still have troubles, please set the debug option in the settings to "yes"
 
 = Can I make a suggestion for the plugin? =
 
-Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums](http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, noone has bought me [Calvin & Hobbes](http://amzn.com/w/2XZPC0CD6SILM) yet.
+Thanks to all the great feedback for this plugin, it is what it is now. I try to answer all questions in the [forums](http://wordpress.org/support/plugin/lastfm-records) and keep the users of this plugin happy. Strangely enough, [this list](http://amzn.com/w/2XZPC0CD6SILM) sees little action.
 
 == Changelog ==
+
+= 1.7.7 = 
+
+* switched to https for requests to last.fm api
+* added option to set your own last.fm api key
+Thanks to wordpress.org user [sunpig](https://wordpress.org/support/topic/https-for-call-to-audioscrobbler-and-api-key?replies=3) for both suggestions.
 
 = 1.7.6 = 
 
@@ -136,6 +142,7 @@ The `[lastfmrecords]` shortcode gives you the opportunity to show cd covers in y
 * `imgwidth`: width (and height) of the cd covers
 * `user`: last.fm username
 * `refreshmin`: time between updates (only works for period `recenttracks`)
+* `ownapikey`: use your own Last.Fm API key
 
 For example:
 

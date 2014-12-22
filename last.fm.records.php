@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.7.6
+Version: 1.7.7
 License: GPL2
 */
 
@@ -240,6 +240,7 @@ if ( !class_exists( 'LastfmRecords_Settings' ) ) {
 			add_settings_section( 'optional-section', 'Optional settings' , array( &$this, 'section_optional' ), basename( __FILE__ ) );
 
 			add_settings_field( 'linknewscreen', 'Open links in new window',  array( &$this, 'setting_linknewscreen' ), basename( __FILE__ ), 'optional-section' );
+			add_settings_field( 'ownapikey', 'Last.Fm API key',  array( &$this, 'setting_ownapikey' ), basename( __FILE__ ), 'optional-section' );
 			add_settings_field( 'refresh', 'Refresh covers every x minutes',  array( &$this, 'setting_refresh' ), basename( __FILE__ ), 'optional-section' );
 			add_settings_field( 'offset', 'Your timezone',  array( &$this, 'setting_offset' ), basename( __FILE__ ), 'optional-section' );
 			add_settings_field( 'debug', 'Show debug info',  array( &$this, 'setting_debug' ), basename( __FILE__ ), 'optional-section' );
@@ -401,7 +402,14 @@ if ( !class_exists( 'LastfmRecords_Settings' ) ) {
 			echo "<input id='plugin_refresh' name='lastfm-records[refresh]' size='10' type='text' value='{$options['refresh']}' /><br />"
 			   . "<i>This setting only works when 'period' is set to Recent Tracks.</i>";
 		}
-	
+
+		public function setting_ownapikey() {
+			$options = get_option('lastfm-records');
+			$_ownapikey = (isset($options['ownapikey'])) ? $options['ownapikey'] : '';
+			echo "<input id='plugin_ownapikey' name='lastfm-records[ownapikey]' size='40' type='text' value='{$_ownapikey}' /><br />"
+			   . "<i>To connect to the last.fm servers, you need something that's called an API key.<br />This plugin provides one, but if you prefer to use your own, you can specify it here.</i>";
+		}
+
 		public function setting_offset() {
 			if (get_option('gmt_offset') < 0) {
 				echo "gmt -" . get_option('gmt_offset');
