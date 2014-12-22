@@ -72,7 +72,7 @@
 
 			// capitals to pretend these are constants
 			'LASTFM_APIKEY'     : 'fbfa856cc3af93c43359b57921b1e64e',
-			'LASTFM_WS_URL'     : 'http://ws.audioscrobbler.com/2.0/'
+			'LASTFM_WS_URL'     : 'https://ws.audioscrobbler.com/2.0/'
 
 		};
 
@@ -583,7 +583,17 @@
 						_shortcodenr	= parseInt($this.attr('id').replace('lfr_shortcode', ''));
 						_opts			= options['shortcode'][_shortcodenr];
 					} else {
-						_opts			= options['widget'];
+						// oops, forgot about the standalone option
+						if ('widget' in options) {
+							_opts			= options['widget'];
+						} else {
+							_opts			= options;
+						}
+					}
+
+					if ( ( typeof _opts.ownapikey != "undefined" ) && ( '' != _opts.ownapikey ) ) {
+						_opts.LASTFM_APIKEY = _opts.ownapikey;
+						delete _opts.ownapikey;
 					}
 
 /*
