@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/lastfm-records/
 Description: The Last.Fm Records plugin lets you show what you are listening to, with a little help from our friends at last.fm.
 Author: Jeroen Smeets
 Author URI: http://jeroensmeets.net/
-Version: 1.7.7
+Version: 1.7.8
 License: GPL2
 */
 
@@ -50,6 +50,7 @@ function lfr_get_stylesheet_fullname($_int) {
 		case 1:
 			$_stylesheet = 'hover';
 			break;
+		default:
 		case 2:
 			$_stylesheet = 'simple';
 			break;
@@ -121,9 +122,9 @@ function lfr_shortcode($atts) {
 
 	// save settings for inclusion in javascript in wp_footer action
 	$_lfr_settings['shortcode'][$lfr_count] = $atts;
-	
-	$_style = lfr_get_stylesheet_fullname($atts['stylesheet']);
-	if ($_style) {
+
+	if ( isset( $atts['stylesheet'] ) ) {
+		$_style = lfr_get_stylesheet_fullname($atts['stylesheet']);
 		$_result  = "      <div id='lfr_shortcode" . $lfr_count . "' class='lastfmrecords lfr_widget lfr_" . $_style . "'></div>\n\n";
 	} else {
 		$_result  = "      <div id='lfr_shortcode" . $lfr_count . "' class='lastfmrecords lfr_widget'></div>\n\n";
